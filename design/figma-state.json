@@ -1,0 +1,227 @@
+{
+  "fileKey": "teMMTbWWtvdrPOlIZmd6mB",
+  "url": "https://www.figma.com/design/teMMTbWWtvdrPOlIZmd6mB?node-id=1-550",
+  "status": "Created and visually reviewed",
+  "validation": {
+    "fileKey": "teMMTbWWtvdrPOlIZmd6mB",
+    "screenCount": 18,
+    "frames": [
+      {
+        "id": "1:550",
+        "name": "V2 / Dashboard",
+        "counts": {
+          "FRAME": 29,
+          "TEXT": 60,
+          "INSTANCE": 1
+        },
+        "imageNodes": [],
+        "badFonts": [],
+        "outside": []
+      },
+      {
+        "id": "1:551",
+        "name": "V2 / Cases",
+        "counts": {
+          "FRAME": 26,
+          "TEXT": 57,
+          "INSTANCE": 5
+        },
+        "imageNodes": [],
+        "badFonts": [],
+        "outside": []
+      },
+      {
+        "id": "1:552",
+        "name": "V2 / New case",
+        "counts": {
+          "FRAME": 33,
+          "TEXT": 43,
+          "INSTANCE": 12
+        },
+        "imageNodes": [],
+        "badFonts": [],
+        "outside": []
+      },
+      {
+        "id": "1:553",
+        "name": "V2 / Case details",
+        "counts": {
+          "FRAME": 26,
+          "TEXT": 42,
+          "INSTANCE": 6
+        },
+        "imageNodes": [],
+        "badFonts": [],
+        "outside": []
+      },
+      {
+        "id": "1:554",
+        "name": "V2 / Hearing calendar",
+        "counts": {
+          "FRAME": 61,
+          "TEXT": 74,
+          "INSTANCE": 5
+        },
+        "imageNodes": [],
+        "badFonts": [],
+        "outside": []
+      },
+      {
+        "id": "1:555",
+        "name": "V2 / Clients",
+        "counts": {
+          "FRAME": 23,
+          "TEXT": 43,
+          "INSTANCE": 2
+        },
+        "imageNodes": [],
+        "badFonts": [],
+        "outside": []
+      },
+      {
+        "id": "1:556",
+        "name": "V2 / Documents",
+        "counts": {
+          "FRAME": 25,
+          "TEXT": 43,
+          "INSTANCE": 3
+        },
+        "imageNodes": [],
+        "badFonts": [],
+        "outside": []
+      },
+      {
+        "id": "1:557",
+        "name": "V2 / Payments",
+        "counts": {
+          "FRAME": 30,
+          "TEXT": 54,
+          "INSTANCE": 6
+        },
+        "imageNodes": [],
+        "badFonts": [],
+        "outside": []
+      },
+      {
+        "id": "1:558",
+        "name": "V2 / Reminders",
+        "counts": {
+          "FRAME": 21,
+          "TEXT": 37,
+          "INSTANCE": 1
+        },
+        "imageNodes": [],
+        "badFonts": [],
+        "outside": []
+      },
+      {
+        "id": "1:559",
+        "name": "V2 / Settings",
+        "counts": {
+          "FRAME": 22,
+          "TEXT": 29,
+          "INSTANCE": 4
+        },
+        "imageNodes": [],
+        "badFonts": [],
+        "outside": []
+      },
+      {
+        "id": "1:560",
+        "name": "V2 / Mobile dashboard",
+        "counts": {
+          "FRAME": 7,
+          "TEXT": 20,
+          "INSTANCE": 2
+        },
+        "imageNodes": [],
+        "badFonts": [],
+        "outside": []
+      },
+      {
+        "id": "1:561",
+        "name": "V2 / Mobile case details",
+        "counts": {
+          "FRAME": 7,
+          "TEXT": 17,
+          "INSTANCE": 3
+        },
+        "imageNodes": [],
+        "badFonts": [],
+        "outside": []
+      },
+      {
+        "id": "2:1941",
+        "name": "V2 / Form / Add hearing",
+        "counts": {
+          "TEXT": 16,
+          "FRAME": 8,
+          "INSTANCE": 8
+        },
+        "imageNodes": [],
+        "badFonts": [],
+        "outside": []
+      },
+      {
+        "id": "2:1994",
+        "name": "V2 / Form / Upload document",
+        "counts": {
+          "TEXT": 12,
+          "FRAME": 6,
+          "INSTANCE": 6
+        },
+        "imageNodes": [],
+        "badFonts": [],
+        "outside": []
+      },
+      {
+        "id": "2:2035",
+        "name": "V2 / Form / Close case",
+        "counts": {
+          "TEXT": 12,
+          "FRAME": 6,
+          "INSTANCE": 6
+        },
+        "imageNodes": [],
+        "badFonts": [],
+        "outside": []
+      },
+      {
+        "id": "2:2076",
+        "name": "V2 / Form / New client",
+        "counts": {
+          "TEXT": 12,
+          "FRAME": 6,
+          "INSTANCE": 6
+        },
+        "imageNodes": [],
+        "badFonts": [],
+        "outside": []
+      },
+      {
+        "id": "2:2137",
+        "name": "V2 / Form / Record payment",
+        "counts": {
+          "TEXT": 14,
+          "FRAME": 7,
+          "INSTANCE": 7
+        },
+        "imageNodes": [],
+        "badFonts": [],
+        "outside": []
+      },
+      {
+        "id": "2:2185",
+        "name": "V2 / Case details / Closed",
+        "counts": {
+          "FRAME": 26,
+          "TEXT": 42,
+          "INSTANCE": 6
+        },
+        "imageNodes": [],
+        "badFonts": [],
+        "outside": []
+      }
+    ]
+  }
+}
