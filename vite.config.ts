@@ -33,6 +33,10 @@ export default defineConfig({
   ],
   test: {
     environment: "node",
-    include: ["src/**/*.test.ts", "supabase/tests/**/*.test.ts"],
+    include: [
+      "src/**/*.test.ts",
+      "supabase/tests/**/*.test.ts",
+      "firebase-functions/src/**/*.test.ts",
+    ],
   },
 });

@@ -12,12 +12,15 @@
     "preview": "vite preview --host 127.0.0.1",
     "db:types": "supabase gen types typescript --local > src/lib/database.generated.ts",
     "test:e2e": "playwright test",
-    "db:types:embedded": "node scripts/generate-types.ts"
+    "db:types:embedded": "node scripts/generate-types.ts",
+    "firebase:build": "npm --prefix firebase-functions run build",
+    "firebase:deploy": "npx firebase-tools deploy --project ainsathi --only firestore:rules,firestore:indexes,storage,functions:ainsathi",
+    "pretest": "node firebase-functions/scripts/copy-schema.mjs"
   },
   "dependencies": {
     "@fontsource/noto-sans-bengali": "^5.3.0",
     "@hookform/resolvers": "^5.9.1",
-    "@supabase/supabase-js": "^2.117.3",
+    "firebase": "^13.0.0",
     "lucide-react": "^1.54.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
@@ -44,5 +47,8 @@
     "vite": "^8.3.4",
     "vite-plugin-pwa": "^2.0.0",
     "vitest": "^5.0.3"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "^1.14.6"
   }
 }

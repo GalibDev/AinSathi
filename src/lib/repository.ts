@@ -1,5 +1,3 @@
-import { z } from "zod";
-import { requireSupabase } from "./supabase";
 import {
   sampleCases,
   sampleClients,
@@ -9,20 +7,7 @@ import {
   demoOrg,
   demoUser,
 } from "./demo";
-import {
-  caseSchema,
-  clientSchema,
-  hearingSchema,
-  documentSchema,
-  memberSchema,
-  organizationSchema,
-  eventSchema,
-  noteSchema,
-  notificationSchema,
-  reportSchema,
-  today,
-  validateFile,
-} from "./schema";
+import { today, validateFile } from "./schema";
 import type {
   CaseRecord,
   ClientRecord,
@@ -38,20 +23,6 @@ import type {
   Notification,
   Report,
 } from "./schema";
-import type { Database } from "./database.generated";
-type Insert<T extends keyof Database["public"]["Tables"]> =
-  Database["public"]["Tables"][T]["Insert"];
-const check = (error: { message: string } | null) => {
-  if (error)
-    throw new Error(
-      error.message.includes("duplicate")
-        ? "এই মোবাইল নম্বরে একটি মক্কেল ইতিমধ্যে আছেন।"
-        : error.message.includes("row-level") ||
-            error.message.includes("Permission")
-          ? "এই কাজের অনুমতি নেই।"
-          : error.message,
-    );
-};
 const timestamp = () => new Date().toISOString();
 export class Repository {
   readonly demo: boolean;
@@ -70,37 +41,20 @@ export class Repository {
   }
   async memberships() {
     if (this.demo) return sampleMembers.filter((m) => m.user_id === demoUser);
-    const { data, error } = await requireSupabase()
-      .from("organization_members")
-      .select("*")
-      .eq(
-        "user_id",
-        (await requireSupabase().auth.getUser()).data.user?.id ?? "",
-      );
-    check(error);
-    return z.array(memberSchema).parse(data);
+    throw new Error("ডেমো ছাড়া FirebaseRepository ব্যবহার করুন।");
   }
   async organizations() {
     if (this.demo) return [sampleOrganization];
-    const { data, error } = await requireSupabase()
-      .from("organizations")
-      .select("*")
-      .order("name");
-    check(error);
-    return z.array(organizationSchema).parse(data);
+    throw new Error("ডেমো ছাড়া FirebaseRepository ব্যবহার করুন।");
   }
   async members(org: string) {
+    void org;
     if (this.demo) return sampleMembers;
-    const { data, error } = await requireSupabase()
-      .from("organization_members")
-      .select("*")
-      .eq("organization_id", org)
-      .order("display_name")
-      .limit(200);
-    check(error);
-    return z.array(memberSchema).parse(data);
+    throw new Error("ডেমো ছাড়া FirebaseRepository ব্যবহার করুন।");
   }
   async listCases(org: string, f: CaseFilters) {
+    void org;
+    void f;
     if (this.demo) {
       let records = this.cases.filter((c) => !c.archived_at);
       records = records.filter(
@@ -139,87 +93,51 @@ export class Repository {
       );
       return records.slice(f.page * 20, (f.page + 1) * 20);
     }
-    const { data, error } = await requireSupabase().rpc("search_cases", {
-      org,
-      query: f.query,
-      type_filter: f.type,
-      status_filter: f.status,
-      court_filter: f.court,
-      ...(f.lawyer ? { lawyer_filter: f.lawyer } : {}),
-      ...(f.from ? { date_from: f.from } : {}),
-      ...(f.to ? { date_to: f.to } : {}),
-      ...(f.hearingFrom ? { hearing_from: f.hearingFrom } : {}),
-      ...(f.hearingTo ? { hearing_to: f.hearingTo } : {}),
-      page_number: f.page,
-      sort_order: f.sort,
-    });
-    check(error);
-    return z.array(caseSchema).parse(data);
+    throw new Error("ডেমো ছাড়া FirebaseRepository ব্যবহার করুন।");
   }
   async getCase(org: string, id: string) {
+    void org;
+    void id;
     if (this.demo) {
       const c = this.cases.find((c) => c.id === id && !c.archived_at);
       if (!c) throw new Error("মামলাটি পাওয়া যায়নি");
       return c;
     }
-    const { data, error } = await requireSupabase().rpc("get_case", {
-      org,
-      case_id: id,
-    });
-    check(error);
-    if (!data?.length) throw new Error("মামলাটি পাওয়া যায়নি");
-    return caseSchema.parse(data[0]);
+    throw new Error("ডেমো ছাড়া FirebaseRepository ব্যবহার করুন।");
   }
   async listClients(org: string, query = "", page = 0) {
+    void org;
+    void query;
+    void page;
     if (this.demo)
       return this.clients
         .filter(
           (c) => !c.archived_at && (c.full_name + c.phone).includes(query),
         )
         .slice(page * 20, page * 20 + 20);
-    const safe = query.replaceAll(/[%_,()]/g, "");
-    let req = requireSupabase()
-      .from("clients")
-      .select("*")
-      .eq("organization_id", org)
-      .is("archived_at", null)
-      .order("full_name")
-      .range(page * 20, page * 20 + 19);
-    if (safe) req = req.or(`full_name.ilike.%${safe}%,phone.ilike.%${safe}%`);
-    const { data, error } = await req;
-    check(error);
-    return z.array(clientSchema).parse(data);
+    throw new Error("ডেমো ছাড়া FirebaseRepository ব্যবহার করুন।");
   }
   async getClient(org: string, id: string) {
+    void org;
+    void id;
     if (this.demo) {
       const c = this.clients.find((c) => c.id === id);
       if (!c) throw new Error("মক্কেল পাওয়া যায়নি");
       return c;
     }
-    const { data, error } = await requireSupabase()
-      .from("clients")
-      .select("*")
-      .eq("organization_id", org)
-      .eq("id", id)
-      .single();
-    check(error);
-    return clientSchema.parse(data);
+    throw new Error("ডেমো ছাড়া FirebaseRepository ব্যবহার করুন।");
   }
   async clientCases(org: string, id: string) {
+    void org;
+    void id;
     if (this.demo)
       return this.cases.filter((c) => c.client_id === id && !c.archived_at);
-    const { data, error } = await requireSupabase()
-      .from("cases")
-      .select("*")
-      .eq("organization_id", org)
-      .eq("client_id", id)
-      .is("archived_at", null)
-      .order("serial_number", { ascending: false })
-      .limit(100);
-    check(error);
-    return z.array(caseSchema).parse(data);
+    throw new Error("ডেমো ছাড়া FirebaseRepository ব্যবহার করুন।");
   }
   async saveClient(org: string, input: ClientInput, id?: string) {
+    void org;
+    void input;
+    void id;
     if (this.demo) {
       if (
         this.clients.some(
@@ -240,24 +158,12 @@ export class Repository {
         : [c, ...this.clients];
       return c;
     }
-    const values: Insert<"clients"> = { ...input, organization_id: org };
-    const { data, error } = id
-      ? await requireSupabase()
-          .from("clients")
-          .update(values)
-          .eq("organization_id", org)
-          .eq("id", id)
-          .select()
-          .single()
-      : await requireSupabase()
-          .from("clients")
-          .insert(values)
-          .select()
-          .single();
-    check(error);
-    return clientSchema.parse(data);
+    throw new Error("ডেমো ছাড়া FirebaseRepository ব্যবহার করুন।");
   }
   async saveCase(org: string, input: CaseInput, id?: string) {
+    void org;
+    void input;
+    void id;
     if (this.demo) {
       const existing = this.cases.find((c) => c.id === id);
       const c: CaseRecord = {
@@ -281,18 +187,7 @@ export class Repository {
       this.addEvent(c.id, id ? "cases:update" : "cases:insert");
       return c;
     }
-    const values: Insert<"cases"> = { ...input, organization_id: org };
-    const { data, error } = id
-      ? await requireSupabase()
-          .from("cases")
-          .update(input)
-          .eq("organization_id", org)
-          .eq("id", id)
-          .select()
-          .single()
-      : await requireSupabase().from("cases").insert(values).select().single();
-    check(error);
-    return caseSchema.parse(data);
+    throw new Error("ডেমো ছাড়া FirebaseRepository ব্যবহার করুন।");
   }
   async status(
     org: string,
@@ -301,6 +196,11 @@ export class Repository {
     closed_date: string | null = null,
     closure_result = "",
   ) {
+    void org;
+    void id;
+    void status;
+    void closed_date;
+    void closure_result;
     if (this.demo) {
       this.cases = this.cases.map((c) =>
         c.id === id ? { ...c, status, closed_date, closure_result } : c,
@@ -308,16 +208,12 @@ export class Repository {
       this.addEvent(id, "cases:status:" + status, closed_date, closure_result);
       return;
     }
-    const { error } = await requireSupabase()
-      .from("cases")
-      .update({ status, closed_date, closure_result })
-      .eq("organization_id", org)
-      .eq("id", id)
-      .select()
-      .single();
-    check(error);
+    throw new Error("ডেমো ছাড়া FirebaseRepository ব্যবহার করুন।");
   }
   async archive(org: string, table: "cases" | "clients", id: string) {
+    void org;
+    void table;
+    void id;
     if (this.demo) {
       if (table === "cases")
         this.cases = this.cases.map((c) =>
@@ -329,16 +225,13 @@ export class Repository {
         );
       return;
     }
-    const { error } = await requireSupabase()
-      .from(table)
-      .update({ archived_at: timestamp() })
-      .eq("organization_id", org)
-      .eq("id", id)
-      .select()
-      .single();
-    check(error);
+    throw new Error("ডেমো ছাড়া FirebaseRepository ব্যবহার করুন।");
   }
   async listHearings(org: string, from: string, to: string, caseId?: string) {
+    void org;
+    void from;
+    void to;
+    void caseId;
     if (this.demo)
       return this.hearings
         .filter(
@@ -352,21 +245,12 @@ export class Repository {
             b.hearing_date + (b.hearing_time ?? "99:99"),
           ),
         );
-    let req = requireSupabase()
-      .from("hearings")
-      .select("*")
-      .eq("organization_id", org)
-      .gte("hearing_date", from)
-      .lte("hearing_date", to)
-      .order("hearing_date")
-      .order("hearing_time")
-      .limit(200);
-    if (caseId) req = req.eq("case_id", caseId);
-    const { data, error } = await req;
-    check(error);
-    return z.array(hearingSchema).parse(data);
+    throw new Error("ডেমো ছাড়া FirebaseRepository ব্যবহার করুন।");
   }
   async saveHearing(org: string, input: HearingInput, id?: string) {
+    void org;
+    void input;
+    void id;
     const values = {
       ...input,
       organization_id: org,
@@ -395,108 +279,60 @@ export class Repository {
       this.addEvent(input.case_id, "hearings:" + (id ? "update" : "insert"));
       return h;
     }
-    const { data, error } = id
-      ? await requireSupabase()
-          .from("hearings")
-          .update(values)
-          .eq("organization_id", org)
-          .eq("id", id)
-          .select()
-          .single()
-      : await requireSupabase()
-          .from("hearings")
-          .insert(values)
-          .select()
-          .single();
-    check(error);
-    return hearingSchema.parse(data);
+    throw new Error("ডেমো ছাড়া FirebaseRepository ব্যবহার করুন।");
   }
   async listDocuments(org: string, caseId?: string) {
+    void org;
+    void caseId;
     if (this.demo)
       return this.documents.filter(
         (d) => !d.archived_at && (!caseId || d.case_id === caseId),
       );
-    let req = requireSupabase()
-      .from("case_documents")
-      .select("*")
-      .eq("organization_id", org)
-      .is("archived_at", null)
-      .order("created_at", { ascending: false })
-      .limit(100);
-    if (caseId) req = req.eq("case_id", caseId);
-    const { data, error } = await req;
-    check(error);
-    return z.array(documentSchema).parse(data);
+    throw new Error("ডেমো ছাড়া FirebaseRepository ব্যবহার করুন।");
   }
   async upload(org: string, caseId: string, file: File) {
+    void org;
+    void caseId;
+    void file;
     await validateFile(file);
     if (this.demo)
       throw new Error(
-        "ডেমোতে গোপন নথি আপলোড হয় না। Supabase সংযোগ দিয়ে ব্যবহার করুন।",
+        "ডেমোতে গোপন নথি আপলোড হয় না। আসল অ্যাকাউন্টে লগইন করে ব্যবহার করুন।",
       );
-    const body = new FormData();
-    body.set("organization_id", org);
-    body.set("case_id", caseId);
-    body.set("file", file);
-    const { data, error } = await requireSupabase().functions.invoke(
-      "upload-document",
-      { body },
-    );
-    check(error);
-    if (!data || typeof data !== "object" || !("document" in data))
-      throw new Error("আপলোডের ফলাফল পাওয়া যায়নি");
-    return documentSchema.parse(data.document);
+    throw new Error("ডেমো ছাড়া FirebaseRepository ব্যবহার করুন।");
   }
-  async download(doc: DocumentRecord) {
+  async download(doc: DocumentRecord): Promise<string> {
+    void doc;
     if (this.demo) throw new Error("ডেমো নথি ডাউনলোড করা যায় না");
-    const { data, error } = await requireSupabase()
-      .storage.from("case-documents")
-      .createSignedUrl(doc.storage_path, 60);
-    check(error);
-    if (!data) throw new Error("ডাউনলোড লিংক তৈরি হয়নি");
-    return data.signedUrl;
+    throw new Error("ডেমো ছাড়া FirebaseRepository ব্যবহার করুন।");
   }
   async archiveDocument(org: string, id: string) {
+    void org;
+    void id;
     if (this.demo) {
       this.documents = this.documents.map((d) =>
         d.id === id ? { ...d, archived_at: timestamp() } : d,
       );
       return;
     }
-    const { error } = await requireSupabase()
-      .from("case_documents")
-      .update({ archived_at: timestamp() })
-      .eq("organization_id", org)
-      .eq("id", id)
-      .select()
-      .single();
-    check(error);
+    throw new Error("ডেমো ছাড়া FirebaseRepository ব্যবহার করুন।");
   }
   async caseHistory(org: string, caseId: string) {
+    void org;
+    void caseId;
     if (this.demo) return this.events.filter((e) => e.case_id === caseId);
-    const { data, error } = await requireSupabase()
-      .from("case_events")
-      .select("*")
-      .eq("organization_id", org)
-      .eq("case_id", caseId)
-      .order("created_at", { ascending: false })
-      .limit(100);
-    check(error);
-    return z.array(eventSchema).parse(data);
+    throw new Error("ডেমো ছাড়া FirebaseRepository ব্যবহার করুন।");
   }
   async caseNotes(org: string, caseId: string) {
+    void org;
+    void caseId;
     if (this.demo) return this.notes.filter((n) => n.case_id === caseId);
-    const { data, error } = await requireSupabase()
-      .from("case_notes")
-      .select("*")
-      .eq("organization_id", org)
-      .eq("case_id", caseId)
-      .order("created_at", { ascending: false })
-      .limit(100);
-    check(error);
-    return z.array(noteSchema).parse(data);
+    throw new Error("ডেমো ছাড়া FirebaseRepository ব্যবহার করুন।");
   }
   async addNote(org: string, caseId: string, body: string) {
+    void org;
+    void caseId;
+    void body;
     if (this.demo) {
       this.notes.unshift({
         id: crypto.randomUUID(),
@@ -509,14 +345,12 @@ export class Repository {
       });
       return;
     }
-    const { error } = await requireSupabase()
-      .from("case_notes")
-      .insert({ organization_id: org, case_id: caseId, body })
-      .select()
-      .single();
-    check(error);
+    throw new Error("ডেমো ছাড়া FirebaseRepository ব্যবহার করুন।");
   }
   async report(org: string, from = "", to = ""): Promise<Report> {
+    void org;
+    void from;
+    void to;
     if (this.demo) {
       const c = this.cases.filter(
         (c) =>
@@ -550,71 +384,48 @@ export class Repository {
         ).length,
       };
     }
-    const { data, error } = await requireSupabase().rpc("chamber_report", {
-      org,
-      ...(from ? { date_from: from } : {}),
-      ...(to ? { date_to: to } : {}),
-    });
-    check(error);
-    return reportSchema.parse(data);
+    throw new Error("ডেমো ছাড়া FirebaseRepository ব্যবহার করুন।");
   }
   async listNotifications(org: string) {
+    void org;
     if (this.demo) return this.notifications;
-    const { data, error } = await requireSupabase()
-      .from("notifications")
-      .select("*")
-      .eq("organization_id", org)
-      .order("created_at", { ascending: false })
-      .limit(50);
-    check(error);
-    return z.array(notificationSchema).parse(data);
+    throw new Error("ডেমো ছাড়া FirebaseRepository ব্যবহার করুন।");
   }
   async readNotification(org: string, id: string) {
+    void org;
+    void id;
     if (this.demo) {
       this.notifications = this.notifications.map((n) =>
         n.id === id ? { ...n, read_at: timestamp() } : n,
       );
       return;
     }
-    const { error } = await requireSupabase()
-      .from("notifications")
-      .update({ read_at: timestamp() })
-      .eq("organization_id", org)
-      .eq("id", id)
-      .select()
-      .single();
-    check(error);
+    throw new Error("ডেমো ছাড়া FirebaseRepository ব্যবহার করুন।");
   }
   async invite(org: string, email: string, role: Role) {
+    void org;
+    void email;
+    void role;
     if (this.demo) throw new Error("ডেমোতে আমন্ত্রণ পাঠানো যায় না");
-    const { data, error } = await requireSupabase().rpc("invite_member", {
-      org,
-      recipient_email: email,
-      member_role: role,
-    });
-    check(error);
-    return data;
+    throw new Error("ডেমো ছাড়া FirebaseRepository ব্যবহার করুন।");
   }
   async changeRole(org: string, userId: string, role: Role) {
+    void org;
+    void userId;
+    void role;
     if (this.demo) throw new Error("ডেমোতে সদস্যের অনুমতি পরিবর্তন হয় না");
-    const { error } = await requireSupabase().rpc("set_member_role", {
-      org,
-      member: userId,
-      new_role: role,
-    });
-    check(error);
+    throw new Error("ডেমো ছাড়া FirebaseRepository ব্যবহার করুন।");
   }
   async assignments(org: string, caseId: string) {
+    void org;
+    void caseId;
     if (this.demo) return this.assigned[caseId] ?? [];
-    const { data, error } = await requireSupabase()
-      .from("case_assignments")
-      .select("user_id")
-      .eq("organization_id", org)
-      .eq("case_id", caseId);
-    check(error);
-    return (data ?? []).map((x) => x.user_id);
+    throw new Error("ডেমো ছাড়া FirebaseRepository ব্যবহার করুন।");
   }
   async assign(org: string, caseId: string, userId: string) {
+    void org;
+    void caseId;
+    void userId;
     if (this.demo) {
       this.assigned[caseId] = [
         ...new Set([...(this.assigned[caseId] ?? []), userId]),
@@ -622,39 +433,26 @@ export class Repository {
       this.addEvent(caseId, "case_assignments:insert");
       return;
     }
-    const { error } = await requireSupabase()
-      .from("case_assignments")
-      .insert({ organization_id: org, case_id: caseId, user_id: userId })
-      .select()
-      .single();
-    check(error);
+    throw new Error("ডেমো ছাড়া FirebaseRepository ব্যবহার করুন।");
   }
   async unassign(org: string, caseId: string, userId: string) {
+    void org;
+    void caseId;
+    void userId;
     if (this.demo) {
       this.assigned[caseId] = (this.assigned[caseId] ?? []).filter(
         (u) => u !== userId,
       );
       return;
     }
-    const { error } = await requireSupabase()
-      .from("case_assignments")
-      .delete()
-      .eq("organization_id", org)
-      .eq("case_id", caseId)
-      .eq("user_id", userId)
-      .select()
-      .single();
-    check(error);
+    throw new Error("ডেমো ছাড়া FirebaseRepository ব্যবহার করুন।");
   }
   async saveOrganization(org: string, name: string, address: string) {
+    void org;
+    void name;
+    void address;
     if (this.demo) throw new Error("ডেমোতে চেম্বারের সেটিংস পরিবর্তন হয় না");
-    const { error } = await requireSupabase()
-      .from("organizations")
-      .update({ name, address })
-      .eq("id", org)
-      .select()
-      .single();
-    check(error);
+    throw new Error("ডেমো ছাড়া FirebaseRepository ব্যবহার করুন।");
   }
   private addEvent(
     caseId: string,
@@ -662,6 +460,10 @@ export class Repository {
     closure_date: string | null = null,
     outcome: string | null = null,
   ) {
+    void caseId;
+    void action;
+    void closure_date;
+    void outcome;
     this.events.unshift({
       id: crypto.randomUUID(),
       organization_id: demoOrg,

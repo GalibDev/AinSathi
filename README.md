@@ -1,100 +1,90 @@
 # AinSathi — আপনার মামলা, আপনার নিয়ন্ত্রণ
 
-Bengali-first, responsive lawyer/chamber management app. The supplied navy/gold mobile design is the visual reference. This is an independent chamber tool, not an official judiciary or government service.
+Bengali-first lawyer/chamber management app using React, strict TypeScript, Vite, Firebase Authentication, Firestore and private Cloud Storage. Navy/gold responsive desktop and mobile UI. Hosting configuration targets Vercel.
 
-## Implemented
+## Current status
 
-- React/TypeScript/Vite, Tailwind utilities, Lucide, self-hosted Noto Sans Bengali.
-- Responsive sidebar, mobile drawer/bottom navigation, dashboard, case register, search/filter/sort/pagination, client directory/detail, case create/edit/archive/close/reopen, hearings, monthly calendar/agenda, private document flow, notes/history, team roles/invitation links, reports/CSV, notifications, settings/profile, protected auth routes.
-- Supabase migrations for normalized tenant-scoped data; composite foreign keys; transactional continuous per-chamber serials; RLS; restricted role changes; private storage and validated upload Edge Function.
-- Installable PWA manifest/icons and a service worker caching static assets only. API responses, private case data, HTML navigation responses and documents are not cached for offline use.
-- Explicit in-memory demo at `/demo/dashboard`. It uses fictional records, resets on refresh, and cannot upload real documents, send invitations, or change real account security. Production mode never silently uses demo data.
+The active app has migrated from Supabase to Firebase. The browser uses Firebase Google popup login and email/password login, registration, email verification and password recovery. All live chamber data goes through the authenticated workspace callable in asia-south1. The client never falls back to demo records. Analytics is not initialized.
 
-## Requirements and local development
+Local checks are not a hosted deployment. Firebase CLI has no signed-in account on this machine. At the last unauthenticated configuration check, the supplied project's Auth API returned CONFIGURATION_NOT_FOUND; enable Authentication in the Console. Hosted Google consent, emails, Firestore CRUD, signed download IAM and Storage uploads remain unverified until Console setup and deployment.
 
-Node.js 24+, npm, a Supabase project. Docker Desktop is needed only for the standard local Supabase stack; database unit tests use embedded PostgreSQL (PGlite), so they work without Docker.
+The old Supabase migration/tests remain under supabase/ for reference. Existing Supabase records and accounts have NOT been copied to Firebase. Keep that project intact until any required data migration is reviewed. Old setup notes are in supabase/README-legacy.md; they do not configure the active Firebase app.
 
-```powershell
+## Local setup
+
+Node.js 24+ and npm. Functions deploy to Node.js 22 (a different local Node version can produce an engines warning).
+
+~~~powershell
 npm ci
+npm ci --prefix firebase-functions
 Copy-Item .env.example .env.local
-# Set the project URL and publishable key in .env.local (never a service-role key).
+# Set the six VITE_FIREBASE_* values from Firebase Project settings → Your apps.
 npm run dev
-```
+~~~
 
-Open the URL printed by Vite. Without `.env.local`, `/login` explains the configuration requirement and links to the isolated demo.
+Open http://127.0.0.1:5173/login. The explicit /demo/dashboard route is fictional, memory-only, and resets on reload. It cannot upload real files or invite members. .env.local is ignored by Git. Public web config belongs in frontend environment variables; Admin/service-account keys must never be included in VITE_* or committed.
 
-## Supabase setup
+## Firebase Console setup
 
-1. Create a Supabase project. Record its project reference. Keep database/admin credentials outside the repository.
-2. Install the Supabase CLI using its supported Windows installation method, then `supabase login` and `supabase link --project-ref YOUR_PROJECT_REF`.
-3. Apply the migration with `supabase db push`. This creates all tables, functions, constraints, policies, indexes, triggers, and a **private** `case-documents` bucket with 10 MB and MIME restrictions. No migration has been applied to your hosted project by this coding session.
-4. Set Auth **Site URL** to the frontend origin. Add exact redirect URLs for `/onboarding`, `/onboarding?invite=...` as permitted by your redirect configuration, and `/reset-password`. For production invite confirmation, configure an appropriate onboarding wildcard limited to your own origin, e.g. `https://YOUR_DOMAIN/onboarding**`. During development add the equivalent `http://127.0.0.1:5173` URLs.
-5. Enable email/password authentication, email confirmation, suitable password rules, and rate limits. Configure custom SMTP for reliable production verification/reset delivery. OAuth/Google is intentionally not shown as working because it has not been configured.
-6. Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` to `.env.local` and Vercel's environment variables. These browser keys are public identifiers; security relies on verified auth and RLS. Never put a secret/service-role key in `VITE_*`.
-7. Deploy upload validation: `supabase functions deploy upload-document`. Set `supabase secrets set ALLOWED_ORIGINS=https://YOUR_DOMAIN,http://127.0.0.1:5173`. The Edge runtime supplies the server-side `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`; the service key is used only inside this trusted function for Storage operations **after** user, membership, case, MIME/signature and size checks. Authenticated browsers cannot bypass validation with raw Storage inserts.
-8. Register, verify email, create a chamber, then create clients before cases. Serial numbers allocate on the server. Owners/admins create invitation links; a human sends the link, and the recipient signs in with the exact verified invited email.
+1. Select project ainsathi. Build → Authentication → Get started.
+2. Sign-in method: enable Google, select a support email, Save. Enable Email/Password too. No manual Google Client Secret is needed for the standard Firebase Google provider setup.
+3. Authentication → Settings → Authorized domains: add localhost and 127.0.0.1. Add the exact Vercel/custom domain after frontend deployment. Configure verification and reset email templates. Firebase's hosted action handler is used for email confirmation/password reset; continue links return to the app. /reset-password also supports a valid oobCode if you configure a custom email action URL later.
+4. Build → Firestore Database → Create database → Standard edition, Native mode, Production mode. Use a suitable location near users, preferably asia-south1 to match functions if available. Do not use test/open rules. If a database already exists, preserve its location and records.
+5. Enable Blaze billing to deploy Cloud Functions and use Cloud Storage. This is a paid usage plan, not a promise of zero cost. Configure billing budget alerts and review quotas. No billing change has been made by the agent.
+6. Build → Storage → Get started → create the default bucket in production mode. The supplied bucket is ainsathi.firebasestorage.app. Do not add public read/upload rules.
+7. Sign in to the CLI locally using your Google account and deploy the prepared server and deny-all client rules:
 
-For local Supabase: start Docker, run `supabase start`, then `supabase db reset`. Use the local URL/publishable key from CLI output. Local reset recreates local data; never run a reset against a project containing needed records.
+~~~powershell
+npx firebase-tools login
+npm run firebase:build
+npm run firebase:deploy
+~~~
 
-## Types
+The deploy command explicitly targets project ainsathi. firebase.json's predeploy also builds the functions. The callable uses Firebase-managed runtime credentials; do not download a private key. Signed downloads may need the IAM Service Account Credentials API enabled and the runtime service account granted Service Account Token Creator on itself, in addition to access to its project bucket. Verify this with the first download; do not grant broad roles to users.
 
-`src/lib/database.generated.ts` is generated from the applied migration's PostgreSQL information schema by `node scripts/generate-types.ts`. It contains Supabase-compatible tables, insert/update types and the explicit function API. It does not require a remote project. To generate directly from your configured Supabase schema after deployment:
+8. Register and verify email, or use Google. Create a chamber, then a client, then a case. Test closure/reopening, hearing date updates, team invitations, uploads and download expiry with a second account from another chamber before entering confidential records.
 
-```powershell
-supabase gen types typescript --linked > src/lib/database.generated.ts
-npm run typecheck
-```
+Official setup: https://firebase.google.com/docs/auth/web/google-signin and https://firebase.google.com/docs/functions/get-started. Storage billing: https://firebase.google.com/docs/storage/faqs-storage-changes-announced-sept-2024.
 
-`npm run db:types` uses the local Supabase stack. Runtime inputs/results are also checked with Zod. If you add migrations, regenerate types and rerun tests.
+## Security and data model
 
-## Permission matrix
+Firestore and Storage rules deny all direct client access. The workspace callable verifies Firebase identity and email verification, and authorizes every organization-scoped action using organization_members. Writes recheck membership inside their transaction. Server input/result boundaries use Zod. Organization-scoped subcollections keep references in their chamber. Browser-supplied IDs cannot select records from another chamber.
 
-| Action | Owner | Admin | Lawyer | Assistant | Viewer |
-|---|---|---|---|---|---|
-| Read chamber records/reports | Yes | Yes | Yes | Yes | Yes |
-| Manage cases/clients/hearings/notes/documents | Yes | Yes | Yes | Yes | No |
-| Assign chamber members to cases | Yes | Yes | Yes | Yes | No |
-| Change operational chamber settings | Yes | Yes | No | No | No |
-| Invite lawyer/assistant/viewer | Yes | Yes | No | No | No |
-| Invite admin | Yes | No | No | No | No |
-| Change existing roles | Yes | No | No | No | No |
+Per-chamber counters and case inserts commit in one Firestore transaction; editing cannot change serials. Closing requires a valid date on/after receipt and a disposal result. Reopening clears current disposal fields while append-only event records retain the previous result. History and audit rows are written atomically with changes. Direct clients cannot alter them.
 
-Membership is the explicit record-access boundary: all members may read their chamber's records. Case-assignment visibility restrictions are not implemented; assignments are organizational rather than an additional confidentiality boundary. The last owner cannot be demoted. There is no frontend-owned role field or ownership-transfer shortcut. Records are archived, not hard-deleted. Legal history is retained.
+All members can read their chamber's records. Owners/admins/lawyers/assistants edit records; viewers only read. Owner/admin can edit chamber settings and invite ordinary members; only the owner invites admins and changes roles. The founding owner cannot be demoted or replaced in this version, and creating additional owners is disabled. Case assignment organizes work; it is not an extra confidentiality boundary.
 
-## Documents
+Invitations use 256-bit random tokens stored only as SHA-256 hashes, expire in seven days, and require an exact verified email. Acceptance is transactional and one-use. Memberships and organizations are capped at 200 per user; chamber creation is capped at 20 per user. Invitation links are copied for a human to send, never automatically messaged.
 
-Uploads are authenticated, checked against the user's chamber and an existing case, limited to 10 MB, and validated by magic bytes and declared MIME in the Edge Function. This is file-type validation, not antivirus scanning. The function stores metadata only after the object succeeds and attempts object cleanup if metadata fails; an unusual cleanup failure is reported for administrator reconciliation. Downloads use a 60-second signed link subject to Storage RLS. Do not share these links. Archived documents are hidden from normal lists; archived objects remain stored for retention rather than being erased. Upload UI is indeterminate progress, not a fabricated percentage.
+Uploads accept valid PDF/JPEG/PNG up to 10 MB. The function verifies bytes/MIME, user role and a live case, applies a transactional 20-upload quota in fixed ten-minute windows per user/chamber, then writes private bytes and metadata. File signature checks are not malware scanning. A failed metadata transaction attempts to remove the uploaded object; backups/admin reconciliation should account for rare cleanup failures. Archives preserve files for retention. Downloads use a 60-second signed URL. It remains usable until expiry even if membership is revoked in that interval.
 
-The upload rate check limits recorded uploads to 20 per user/10 minutes but is not an atomic distributed rate limiter; configure platform/gateway protection for hostile traffic before public launch. No private data should be added to a service-worker runtime cache.
+The app caches static assets only through its PWA service worker, never private API data/documents. No Firestore offline persistence is enabled. Authentication tokens use Firebase browser persistence. Launch work still includes App Check enforcement, platform request limits, monitoring, retention policy, malware scanning if required, backup/restore drills, and accessibility/security review.
 
-## Verification
+## Bounded lists and reports
 
-```powershell
+The initial Firebase server reads at most 5,000 records per chamber subcollection for filtering/search/report calculations, and fails explicitly above that limit instead of returning misleading totals. This can incur Firestore reads per request; larger chambers need indexed server pagination/search and aggregate reports before scaling. Case/client UI pages use 20 records; hearings 200; documents/history/notes/related cases 100; notifications 50; members 200. Narrow date/search filters where possible. Reports export CSV; there is no PDF renderer or fee/payment module.
+
+Hearing reminders appear in the app. Save-hearing notifications go to the saving user; assignments notify the assigned member. Scheduled email/SMS/push reminders are not deployed.
+
+## Checks
+
+~~~powershell
 npm run typecheck
 npm run lint
-npm run test
+npm test
+npm run firebase:build
 npm run build
-# With the dev server running:
+# With npm run dev running:
 npx playwright install chromium
-npx playwright test
-```
+npm run test:e2e
+~~~
 
-Database tests apply the actual migration to embedded PostgreSQL with stubbed Supabase auth/storage schemas. They exercise RLS as authenticated roles, cross-tenant isolation, privilege escalation, viewer writes, foreign-key isolation, serial sequencing/immutability, closure/reopening, hearings and private storage. This validates SQL behavior but does not substitute for testing hosted Auth, Storage, Edge Functions and concurrent multi-connection production behavior. PGlite serializes its own query execution; review the atomic UPSERT allocator and run live concurrency tests before production.
+Firebase tests execute the real callable dispatcher against an in-memory transactional adapter: verified identity, tenant isolation, viewer writes, serial preservation, cross-org references, normalized phone uniqueness, close/reopen history, immutable owner, invitation email/replay, hearings, assignments and server file validation. These do not verify Firestore transaction contention, IAM, deployed rules, Google popups, live emails, storage signatures or hosted isolation. Historical Supabase tests run embedded PostgreSQL and do not validate the Firebase deployment.
 
-## Build and Vercel
+For full local emulator testing install a current Java runtime supported by Firebase CLI, then run npx firebase-tools emulators:start --project demo-ainsathi after building functions; set VITE_FIREBASE_EMULATORS=true and use an isolated demo-ainsathi frontend config. Never run an emulator client with real patient/client/case data. Full emulator/hosted integration tests remain a deployment task.
 
-Build command: `npm run build`. Output: `dist`. Use Vercel's Vite preset; `vercel.json` contains SPA rewrites and baseline security headers. Set the two public environment variables, configure your domain and Supabase redirect/origin allowlists, then deploy using your Vercel account. HTTPS is required for PWA installation outside loopback. No Vercel deployment has been performed in this session.
+## Vercel and backups
 
-## Backups and restore
+Import GalibDev/AinSathi. Build command npm run build; output dist. Set the six VITE_FIREBASE_* environment variables (not NEXT_PUBLIC_*), add the deployed hostname to Firebase Authorized domains, and redeploy. vercel.json provides SPA rewrites and baseline headers. No Vercel deployment has been performed in this session.
 
-Back up **both** PostgreSQL and private Storage objects. A database dump includes metadata, not the uploaded binary files. Configure scheduled database backups/PITR according to the chosen Supabase plan, plus an authenticated object backup to a separately controlled encrypted destination. Retain object paths and metadata associations. Test restoration into a separate project, restore files at their original keys, rerun RLS/auth checks and compare file hashes/counts. Do not assume a free tier is a complete disaster-recovery solution. Determine legal retention and deletion policy with the chamber before enabling destructive cleanup.
-
-## Remaining deployment verification
-
-- Hosted Supabase project, credentials and Vercel account were not provided. Real registration/email verification/reset, hosted CRUD, signed downloads, deployed Edge upload behavior and production isolation must be tested after setup.
-- Automatic SMS/email/push hearing delivery and background scheduling are not configured. In-app hearing reminders calculate when the app is opened; stored hearing/assignment notifications are generated by database triggers.
-- No confidential offline access, antivirus service, Google OAuth, billing/subscriptions, fee/payment module or PDF report rendering is advertised as implemented. Reports export CSV.
-- Bounded lists: cases/clients use 20-row pagination; hearings 200 per requested range; case history/notes and related cases/documents 100; notifications 50; members 200. Search or narrow the period when needed. Case-specific pages retrieve older individual records. These limits are visible where relevant and can be expanded with pagination later.
-- Recovery email delivery, CSP tailored to your deployed origin/Supabase endpoints, penetration testing, accessibility testing with assistive technology, restore drills, and platform monitoring remain launch tasks. Do not treat passing local checks as production-readiness certification.
-
-See `IMPLEMENTATION.md` for scope and `design/` for prior Figma artifacts and the current browser previews.
+Back up Firestore records AND private Storage objects; one is not a backup of the other. Preserve document keys, associations and file hashes. Test restoration into a separate restricted project before relying on the system. Review billing/retention and configure scheduled backups under the chamber owner's policy.

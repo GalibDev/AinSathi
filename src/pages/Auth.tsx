@@ -11,7 +11,19 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { configured, requireSupabase } from "../lib/supabase";
+import {
+  configured,
+  googleSignIn,
+  emailSignIn,
+  emailSignUp,
+  passwordReset,
+  finishPasswordReset,
+  authMessage,
+  call,
+  verifyEmail,
+  refreshVerification,
+  logout,
+} from "../lib/firebase";
 import { useWorkspace } from "../lib/context";
 import { Brand } from "../components/Layout";
 import { Button, Field, ErrorBox, Loading } from "../components/ui";
@@ -32,7 +44,12 @@ export function AuthPage() {
             ? "reset"
             : "login";
   const { session, authLoading } = useWorkspace();
-  const [error, setError] = useState(""),
+  const [error, setError] = useState(() => {
+      const params = new URLSearchParams(loc.hash.slice(1));
+      return params.has("error") || new URLSearchParams(loc.search).has("error")
+        ? "Google দিয়ে প্রবেশ সম্পন্ন হয়নি। আবার চেষ্টা করুন।"
+        : "";
+    }),
     [message, setMessage] = useState(""),
     [show, setShow] = useState(false),
     [busy, setBusy] = useState(false);
@@ -52,68 +69,64 @@ export function AuthPage() {
     ? "/onboarding?invite=" + encodeURIComponent(invitation)
     : "/dashboard";
   if (authLoading) return <Loading />;
-  if (session && mode === "login") return <Navigate to={destination} replace />;
+  if (session?.user.email_verified && mode === "login")
+    return <Navigate to={destination} replace />;
+  async function googleLogin() {
+    setError("");
+    setMessage("");
+    setBusy(true);
+    try {
+      await googleSignIn();
+      navigate(destination);
+    } catch (e) {
+      setError(authMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  }
   async function submit(values: AuthValues) {
     setError("");
     setMessage("");
     setBusy(true);
     try {
-      const s = requireSupabase();
       if (mode === "forgot") {
-        const { error } = await s.auth.resetPasswordForEmail(values.email, {
-          redirectTo: location.origin + "/reset-password",
-        });
-        if (error) throw error;
+        await passwordReset(values.email);
         setMessage(
           "অ্যাকাউন্ট থাকলে পাসওয়ার্ড পরিবর্তনের লিংক পাঠানো হয়েছে।",
         );
       } else if (mode === "reset") {
-        const { error } = await s.auth.updateUser({
-          password: values.password,
-        });
-        if (error) throw error;
-        setMessage("পাসওয়ার্ড পরিবর্তন হয়েছে।");
-        navigate(destination);
+        const code = new URLSearchParams(loc.search).get("oobCode");
+        if (!code) throw new Error("ইমেইলের পাসওয়ার্ড রিসেট লিংক খুলুন।");
+        await finishPasswordReset(code, values.password);
+        setMessage("পাসওয়ার্ড পরিবর্তন হয়েছে। লগইন করুন।");
+        navigate("/login");
       } else if (mode === "register") {
         if (values.full_name.trim().length < 2)
           throw new Error("আপনার পূর্ণ নাম দিন");
-        const { data, error } = await s.auth.signUp({
-          email: values.email,
-          password: values.password,
-          options: {
-            data: { full_name: values.full_name },
-            emailRedirectTo:
-              location.origin +
-              (invitation
-                ? "/onboarding?invite=" + encodeURIComponent(invitation)
-                : "/onboarding"),
-          },
-        });
-        if (error) throw error;
-        if (data.session)
-          navigate(
-            invitation
-              ? "/onboarding?invite=" + encodeURIComponent(invitation)
-              : "/onboarding",
-          );
-        else setMessage("ইমেইলে পাঠানো লিংক দিয়ে অ্যাকাউন্ট যাচাই করুন।");
+        await emailSignUp(
+          values.email,
+          values.password,
+          values.full_name,
+          "/login" +
+            (invitation ? "?invite=" + encodeURIComponent(invitation) : ""),
+        );
+        setMessage("ইমেইলে পাঠানো লিংক দিয়ে অ্যাকাউন্ট যাচাই করুন।");
       } else {
-        const { error } = await s.auth.signInWithPassword({
-          email: values.email,
-          password: values.password,
-        });
-        if (error)
-          throw new Error(
-            "ইমেইল বা পাসওয়ার্ড সঠিক নয়, অথবা ইমেইল যাচাই বাকি।",
-          );
+        await emailSignIn(values.email, values.password);
         navigate(destination);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "পুনরায় চেষ্টা করুন");
+      setError(authMessage(e));
     } finally {
       setBusy(false);
     }
   }
+  if (
+    session &&
+    !session.user.email_verified &&
+    (mode === "login" || mode === "register")
+  )
+    return <VerifyAccount destination={destination} />;
   return (
     <div className="auth-layout">
       <section className="auth-art">
@@ -162,10 +175,10 @@ export function AuthPage() {
           <p className="muted">আপনার চেম্বারের কাজ শুরু করুন, নিশ্চিন্তে।</p>
           {!configured && (
             <div className="connection-note">
-              <strong>Supabase সংযোগের অপেক্ষায়</strong>
+              <strong>Firebase সংযোগের অপেক্ষায়</strong>
               <p>
-                আসল অ্যাকাউন্ট ব্যবহার করতে .env.local কনফিগার করুন। নিচের
-                ডেমোতে ডিজাইন ও কার্যপ্রবাহ দেখতে পারেন।
+                আসল অ্যাকাউন্ট ব্যবহার করতে Firebase সংযোগ দিন। নিচের ডেমোতে
+                ডিজাইন ও কার্যপ্রবাহ দেখতে পারেন।
               </p>
             </div>
           )}
@@ -249,6 +262,41 @@ export function AuthPage() {
           <div className="or-divider">
             <span>অথবা</span>
           </div>
+          {(mode === "login" || mode === "register") && (
+            <Button
+              type="button"
+              variant="ghost"
+              className="full google-auth-button"
+              disabled={busy || !configured}
+              onClick={() => void googleLogin()}
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  fill="#4285F4"
+                  d="M21.6 12.23c0-.71-.06-1.39-.18-2.05H12v3.88h5.38a4.6 4.6 0 0 1-2 3.02v2.51h3.24c1.9-1.75 2.98-4.33 2.98-7.36Z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 22c2.7 0 4.96-.9 6.62-2.41l-3.24-2.51c-.9.6-2.06.96-3.38.96-2.6 0-4.8-1.76-5.59-4.12H3.07v2.59A10 10 0 0 0 12 22Z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M6.41 13.92a6 6 0 0 1 0-3.84V7.49H3.07a10 10 0 0 0 0 9.02l3.34-2.59Z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 5.96c1.47 0 2.79.5 3.83 1.5l2.87-2.87A9.6 9.6 0 0 0 12 2a10 10 0 0 0-8.93 5.49l3.34 2.59C7.2 7.72 9.4 5.96 12 5.96Z"
+                />
+              </svg>
+              Google দিয়ে{" "}
+              {mode === "register" ? "অ্যাকাউন্ট তৈরি করুন" : "লগইন করুন"}
+            </Button>
+          )}
           <Link className="button ghost full" to="/demo/dashboard">
             নমুনা চেম্বার দেখুন <ArrowRight size={17} />
           </Link>
@@ -300,7 +348,7 @@ export function Onboarding() {
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
   const invite = new URLSearchParams(useLocation().search).get("invite");
-  if (!session)
+  if (!session || !session.user.email_verified)
     return (
       <Navigate
         to={"/login" + (invite ? "?invite=" + encodeURIComponent(invite) : "")}
@@ -320,16 +368,10 @@ export function Onboarding() {
     try {
       if (memberName.trim().length < 2 || (!invite && name.trim().length < 2))
         throw new Error("চেম্বার ও আপনার পূর্ণ নাম লিখুন");
-      const result = invite
-        ? await requireSupabase().rpc("accept_invitation", {
-            invite_token: invite,
-            member_name: memberName,
-          })
-        : await requireSupabase().rpc("create_chamber", {
-            chamber_name: name,
-            member_name: memberName,
-          });
-      if (result.error) throw result.error;
+      await call(
+        invite ? "acceptInvitation" : "createChamber",
+        invite ? { token: invite, memberName } : { name, memberName },
+      );
       refresh();
       location.assign("/dashboard");
     } catch (e) {
@@ -378,6 +420,65 @@ export function Onboarding() {
               : "চেম্বার তৈরি করুন"}
         </Button>
       </form>
+    </div>
+  );
+}
+
+function VerifyAccount({ destination }: { destination: string }) {
+  const { session } = useWorkspace();
+  const navigate = useNavigate();
+  const [busy, setBusy] = useState(false),
+    [error, setError] = useState(""),
+    [message, setMessage] = useState("");
+  async function check() {
+    setBusy(true);
+    setError("");
+    try {
+      if (await refreshVerification()) navigate(destination);
+      else
+        setMessage(
+          "ইমেইল এখনো যাচাই হয়নি। ইমেইলের লিংক চাপুন, তারপর আবার যাচাই করুন।",
+        );
+    } catch (e) {
+      setError(authMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function resend() {
+    setBusy(true);
+    setError("");
+    try {
+      await verifyEmail("/login" + location.search);
+      setMessage("যাচাইয়ের ইমেইল পাঠানো হয়েছে। Spam ফোল্ডারও দেখুন।");
+    } catch (e) {
+      setError(authMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="standalone">
+      <Brand />
+      <h1>ইমেইল যাচাই করুন</h1>
+      <p>
+        {session?.user.email} ঠিকানায় পাঠানো লিংক দিয়ে অ্যাকাউন্ট যাচাই করুন।
+      </p>
+      {error && <ErrorBox message={error} />}
+      {message && <p role="status">{message}</p>}
+      <Button disabled={busy} onClick={() => void check()}>
+        যাচাই করেছি — এগিয়ে যান
+      </Button>
+      <Button variant="ghost" disabled={busy} onClick={() => void resend()}>
+        আবার ইমেইল পাঠান
+      </Button>
+      <Button
+        variant="ghost"
+        disabled={busy}
+        onClick={() => void logout().catch((e) => setError(authMessage(e)))}
+      >
+        অন্য অ্যাকাউন্ট ব্যবহার করুন
+      </Button>
     </div>
   );
 }

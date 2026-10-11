@@ -23,7 +23,7 @@ import {
   toCsv,
 } from "../lib/schema";
 import type { Role } from "../lib/schema";
-import { requireSupabase } from "../lib/supabase";
+import { saveProfile, authMessage } from "../lib/firebase";
 import {
   Button,
   Field,
@@ -274,7 +274,7 @@ export function Members() {
                   <h3>{m.display_name}</h3>
                   <p>{roleLabels[m.role]}</p>
                 </div>
-                {membership?.role === "owner" && !demo ? (
+                {membership?.role === "owner" && m.role !== "owner" && !demo ? (
                   <select
                     aria-label={`${m.display_name} এর অনুমতি`}
                     value={m.role}
@@ -294,11 +294,13 @@ export function Members() {
                           );
                     }}
                   >
-                    {roles.map((r) => (
-                      <option key={r} value={r}>
-                        {roleLabels[r]}
-                      </option>
-                    ))}
+                    {roles
+                      .filter((r) => r !== "owner")
+                      .map((r) => (
+                        <option key={r} value={r}>
+                          {roleLabels[r]}
+                        </option>
+                      ))}
                   </select>
                 ) : (
                   <span className="status running">সক্রিয়</span>
@@ -515,7 +517,7 @@ export function Settings() {
       refresh();
       notice("চেম্বারের তথ্য হালনাগাদ হয়েছে");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "সংরক্ষণ হয়নি");
+      setError(authMessage(e));
     } finally {
       setBusy(false);
     }
@@ -607,16 +609,7 @@ export function Profile() {
       if (password && password.length < 8)
         throw new Error("পাসওয়ার্ড অন্তত ৮ অক্ষরের হতে হবে");
       if (name.trim().length < 2) throw new Error("পূর্ণ নাম দিন");
-      const { error } = await requireSupabase().auth.updateUser({
-        data: { full_name: name },
-        ...(password ? { password } : {}),
-      });
-      if (error) throw error;
-      const profile = await requireSupabase()
-        .from("profiles")
-        .update({ full_name: name, updated_at: new Date().toISOString() })
-        .eq("id", session!.user.id);
-      if (profile.error) throw profile.error;
+      await saveProfile(name, password);
       setPassword("");
       notice("প্রোফাইল হালনাগাদ হয়েছে");
     } catch (e) {

@@ -8,3 +8,9 @@ coverage/
 playwright-report/
 test-results/
 supabase/.temp/
+firebase-functions/lib/
+firebase-functions/src/schema.ts
+.firebase/
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*

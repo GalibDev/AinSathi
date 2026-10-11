@@ -1,9 +1,7 @@
-# AinSathi implementation
+# Implementation status
 
-Reference: user-supplied navy/gold Bengali mobile screen sheet and complete master prompt.
-Existing repository: Figma design artifacts only; no app or existing behavior to replace.
-Chosen stack: React + strict TypeScript + Vite + Tailwind + Supabase PostgreSQL/Auth/private Storage; Vercel deployment configuration.
+Active stack: React + strict TypeScript + Vite + Tailwind + Firebase Authentication/Firestore/private Storage, with Vercel frontend configuration. Google popup sign-in, email signup/verification/login/reset and profile/password management are integrated.
 
-Order: foundation and responsive navigation; schema/RLS/serial allocation; authentication/chambers; cases/clients; hearings/documents; dashboard/reports; PWA; checks.
-Preview uses an explicit isolated in-memory demo. Real mode never substitutes demo statistics or reports success without a server response.
-Remote configuration and live deployment require the user's Supabase project and Vercel account. No secrets are committed.
+Live data uses FirebaseRepository and the authenticated workspace callable in asia-south1. Demo Repository is explicitly in-memory. Server covers clients/cases/archive/close/reopen, serial transactions, hearing calendar, document uploads/downloads/archive, notes/history, reports/CSV, assignments, roles/invitations and chamber settings. Private direct client reads/writes are denied by rules.
+
+Firebase Console setup, Blaze billing, CLI login and server/rule deployment are pending. Real Google consent, email delivery, hosted CRUD, production concurrency/IAM/signing and Storage need verification after deployment. No billing or deployment was performed. Supabase data/accounts were not migrated or deleted. See README.md for setup, permissions, bounded queries, costs and launch limitations.

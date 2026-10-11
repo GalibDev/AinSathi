@@ -2459,3 +2459,9 @@ dialog::backdrop {
     transition: none !important;
   }
 }
+.google-auth-button {
+  margin-bottom: 12px;
+}
+.google-auth-button svg {
+  flex-shrink: 0;
+}

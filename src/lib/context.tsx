@@ -7,14 +7,16 @@ import {
   useCallback,
 } from "react";
 import type { ReactNode } from "react";
-import type { Session } from "@supabase/supabase-js";
+import { onIdTokenChanged } from "firebase/auth";
+import { FirebaseRepository } from "./firebase-repository";
+import type { Session } from "./firebase";
 import { Repository } from "./repository";
-import { supabase, configured } from "./supabase";
+import { auth, configured, sessionFor, authMessage } from "./firebase";
 import type { Member, Organization } from "./schema";
 import { sampleMembers, sampleOrganization } from "./demo";
 
 interface Workspace {
-  repo: Repository;
+  repo: Repository | FirebaseRepository;
   demo: boolean;
   session: Session | null;
   authLoading: boolean;
@@ -38,7 +40,10 @@ export function WorkspaceProvider({
   demo: boolean;
   children: ReactNode;
 }) {
-  const repo = useMemo(() => new Repository(demo), [demo]);
+  const repo = useMemo(
+    () => (demo ? new Repository(true) : new FirebaseRepository()),
+    [demo],
+  );
   const [session, setSession] = useState<Session | null>(null),
     [authLoading, setAuthLoading] = useState(!demo && configured),
     [workspaceLoading, setWorkspaceLoading] = useState(!demo && configured),
@@ -53,43 +58,30 @@ export function WorkspaceProvider({
     [toast, setToast] = useState(""),
     [error, setError] = useState("");
   useEffect(() => {
-    if (demo || !supabase) return;
-    let live = true;
-    supabase.auth
-      .getSession()
-      .then(({ data, error }) => {
-        if (live) {
-          setSession(data.session);
-          if (error) setError("সেশন যাচাই করা যায়নি");
-          setAuthLoading(false);
-          if (!data.session) setWorkspaceLoading(false);
+    if (demo || !auth) return;
+    return onIdTokenChanged(
+      auth,
+      (user) => {
+        const next = sessionFor(user);
+        setSession(next);
+        setAuthLoading(false);
+        setError("");
+        setWorkspaceLoading(Boolean(next?.user.email_verified));
+        if (!next || !next.user.email_verified) {
+          setMemberships([]);
+          setOrganizations([]);
+          setOrgId("");
         }
-      })
-      .catch(() => {
-        if (live) {
-          setError("সেশন যাচাই করা যায়নি");
-          setAuthLoading(false);
-        }
-      });
-    const { data } = supabase.auth.onAuthStateChange((_event, s) => {
-      setSession(s);
-      setAuthLoading(false);
-      if (!s) {
-        setMemberships([]);
-        setOrganizations([]);
-        setOrgId("");
+      },
+      (e) => {
+        setAuthLoading(false);
         setWorkspaceLoading(false);
-      } else if (_event === "SIGNED_IN" || _event === "INITIAL_SESSION") {
-        setWorkspaceLoading(true);
-      }
-    });
-    return () => {
-      live = false;
-      data.subscription.unsubscribe();
-    };
+        setError(authMessage(e));
+      },
+    );
   }, [demo]);
   useEffect(() => {
-    if (demo || !session) return;
+    if (demo || !session?.user.email_verified) return;
     let live = true;
     setError("");
     Promise.all([repo.memberships(), repo.organizations()])
@@ -103,9 +95,9 @@ export function WorkspaceProvider({
           setWorkspaceLoading(false);
         }
       })
-      .catch(() => {
+      .catch((e) => {
         if (live) {
-          setError("চেম্বারের তথ্য লোড হয়নি। আবার চেষ্টা করুন।");
+          setError(authMessage(e));
           setWorkspaceLoading(false);
         }
       });

@@ -19,7 +19,7 @@ import {
   Search,
 } from "lucide-react";
 import { usePath, useWorkspace } from "../lib/context";
-import { supabase } from "../lib/supabase";
+import { logout as firebaseLogout } from "../lib/firebase";
 import { canEdit } from "../lib/schema";
 const items = [
   ["/dashboard", "ড্যাশবোর্ড", LayoutDashboard],
@@ -63,9 +63,12 @@ export default function Layout() {
       navigate("/login");
       return;
     }
-    const { error } = await supabase!.auth.signOut();
-    if (error) notice("লগ আউট করা যায়নি");
-    else navigate("/login");
+    try {
+      await firebaseLogout();
+      navigate("/login");
+    } catch {
+      notice("লগ আউট করা যায়নি");
+    }
   }
   return (
     <div className="app-shell">

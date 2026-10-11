@@ -1,0 +1,7 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Functions validate signatures/roles and issue short-lived signed downloads.
+    match /{path=**} { allow read, write: if false; }
+  }
+}

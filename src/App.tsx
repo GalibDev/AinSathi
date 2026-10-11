@@ -40,7 +40,8 @@ function Guard() {
     reload,
   } = useWorkspace();
   if (authLoading || workspaceLoading) return <Loading />;
-  if (!demo && !session) return <Navigate to="/login" replace />;
+  if (!demo && (!session || !session.user.email_verified))
+    return <Navigate to="/login" replace />;
   if (error) return <ErrorBox message={error} retry={reload} />;
   if (!organization || !membership) {
     if (demo) return <Loading />;
