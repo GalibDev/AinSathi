@@ -1,7 +1,66 @@
 rules_version = '2';
 service cloud.firestore {
-  match /databases/{database}/documents {
-    // All records pass through verified, tenant-authorized callable functions.
-    match /{document=**} { allow read, write: if false; }
+ match /databases/{database}/documents {
+  function verified() { return request.auth != null && request.auth.token.email_verified == true; }
+  function memberPath(org) { return /databases/$(database)/documents/organization_members/$(org + '_' + request.auth.uid); }
+  function member(org) { return verified() && exists(memberPath(org)); }
+  function manager(org) { return member(org) && get(memberPath(org)).data.role in ['owner','admin']; }
+  function editor(org) { return member(org) && get(memberPath(org)).data.role in ['owner','admin','lawyer','assistant']; }
+  function orgAfter(org) { return getAfter(/databases/$(database)/documents/organizations/$(org)).data; }
+  function invitation(d) { let p=/databases/$(database)/documents/invitations/$(d.invitation_id); let i=get(p).data; return i.organization_id==d.organization_id && i.email==request.auth.token.email.lower() && i.role==d.role && i.used_by==null && i.expires_at>request.time.toMillis() && getAfter(p).data.used_by==request.auth.uid; }
+  match /organization_members/{id} {
+   allow read: if verified() && (resource.data.user_id==request.auth.uid || member(resource.data.organization_id));
+   allow create: if verified() && id==request.resource.data.organization_id+'_'+request.auth.uid && request.resource.data.user_id==request.auth.uid && request.resource.data.display_name is string && request.resource.data.display_name.size()>=2 && ((request.resource.data.role=='owner' && !exists(/databases/$(database)/documents/organizations/$(request.resource.data.organization_id)) && orgAfter(request.resource.data.organization_id).owner_uid==request.auth.uid) || (request.resource.data.role in ['admin','lawyer','assistant','viewer'] && invitation(request.resource.data)));
+   allow update: if manager(resource.data.organization_id) && resource.data.role!='owner' && request.resource.data.role in ['admin','lawyer','assistant','viewer'] && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role','updated_at']);
   }
+  match /invitations/{token} {
+   allow get: if verified() && (resource.data.email==request.auth.token.email.lower() || manager(resource.data.organization_id));
+   allow create: if manager(request.resource.data.organization_id) && request.resource.data.created_by==request.auth.uid && request.resource.data.role in ['admin','lawyer','assistant','viewer'] && request.resource.data.used_by==null && request.resource.data.email is string && request.resource.data.expires_at>request.time.toMillis() && request.resource.data.expires_at<=request.time.toMillis()+604900000;
+   allow update: if verified() && resource.data.email==request.auth.token.email.lower() && resource.data.used_by==null && resource.data.expires_at>request.time.toMillis() && request.resource.data.used_by==request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['used_by']) && getAfter(memberPath(resource.data.organization_id)).data.invitation_id==token;
+  }
+  match /organizations/{org} {
+   allow read: if member(org);
+   allow create: if verified() && request.resource.data.id==org && request.resource.data.owner_uid==request.auth.uid && getAfter(memberPath(org)).data.role=='owner' && request.resource.data.name is string && request.resource.data.name.size()>=2;
+   allow update: if manager(org) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name','address','updated_at']);
+   match /counters/cases {
+    allow read: if member(org);
+    allow create: if verified() && !exists(/databases/$(database)/documents/organizations/$(org)) && orgAfter(org).owner_uid==request.auth.uid && request.resource.data.value==0 && request.resource.data.last_case_id=='';
+    allow update: if editor(org) && request.resource.data.keys().hasOnly(['value','last_case_id']) && request.resource.data.value==resource.data.value+1 && !exists(/databases/$(database)/documents/organizations/$(org)/cases/$(request.resource.data.last_case_id)) && getAfter(/databases/$(database)/documents/organizations/$(org)/cases/$(request.resource.data.last_case_id)).data.serial_number==request.resource.data.value;
+   }
+   function base(id) { return request.resource.data.id==id && request.resource.data.organization_id==org; }
+   function unchanged() { return request.resource.data.id==resource.data.id && request.resource.data.organization_id==resource.data.organization_id && request.resource.data.created_at==resource.data.created_at; }
+   function eventLinked(id) { let d=request.resource.data; let e=getAfter(/databases/$(database)/documents/organizations/$(org)/events/$(d.last_event_id)).data; return e.case_id==id && e.actor_id==request.auth.uid && e.created_at==d.updated_at && e.closure_date==d.closed_date && (d.status!='closed' || e.outcome==d.closure_result); }
+   function validCase() { let d=request.resource.data; return d.title is string && d.title.size()>=2 && d.title.size()<=200 && d.status in ['running','pending','closed'] && ((d.status=='closed' && d.closed_date is string && d.closure_result is string && d.closure_result.size()>=2) || (d.status!='closed' && d.closed_date==null && d.closure_result=='')) && exists(/databases/$(database)/documents/organizations/$(org)/clients/$(d.client_id)); }
+   match /cases/{id} {
+    allow read: if member(org);
+    allow create: if editor(org) && base(id) && validCase() && eventLinked(id) && request.resource.data.status=='running' && request.resource.data.archived_at==null && getAfter(/databases/$(database)/documents/organizations/$(org)/counters/cases).data.last_case_id==id && getAfter(/databases/$(database)/documents/organizations/$(org)/counters/cases).data.value==request.resource.data.serial_number;
+    allow update: if editor(org) && unchanged() && validCase() && request.resource.data.serial_number==resource.data.serial_number && (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['next_hearing_date','updated_at','archived_at']) || (request.resource.data.last_event_id!=resource.data.last_event_id && eventLinked(id)));
+   }
+   match /clients/{id} {
+    function valid() { let d=request.resource.data; return d.full_name is string && d.full_name.size()>=2 && d.full_name.size()<=150 && d.phone is string && d.phone.matches('^(\\+?88)?01[3-9][0-9]{8}$') && d.notes is string && d.notes.size()<=5000; }
+    allow read: if member(org);
+    allow create: if editor(org) && base(id) && valid();
+    allow update: if editor(org) && unchanged() && valid();
+   }
+   match /hearings/{id} {
+    function valid() { let d=request.resource.data; return d.hearing_date is string && d.hearing_date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') && d.purpose is string && d.purpose.size()>=2 && d.reminder_days is int && d.reminder_days>=0 && d.reminder_days<=30 && exists(/databases/$(database)/documents/organizations/$(org)/cases/$(d.case_id)); }
+    allow read: if member(org);
+    allow create: if editor(org) && base(id) && valid();
+    allow update: if editor(org) && unchanged() && request.resource.data.case_id==resource.data.case_id && valid();
+   }
+   match /notes/{id} {
+    allow read: if member(org);
+    allow create: if editor(org) && base(id) && request.resource.data.author_id==request.auth.uid && request.resource.data.body is string && request.resource.data.body.size()>0 && request.resource.data.body.size()<=5000 && exists(/databases/$(database)/documents/organizations/$(org)/cases/$(request.resource.data.case_id));
+   }
+   match /events/{id} {
+    allow read: if member(org);
+    allow create: if editor(org) && base(id) && request.resource.data.actor_id==request.auth.uid && getAfter(/databases/$(database)/documents/organizations/$(org)/cases/$(request.resource.data.case_id)).data.last_event_id==id && getAfter(/databases/$(database)/documents/organizations/$(org)/cases/$(request.resource.data.case_id)).data.updated_at==request.resource.data.created_at && request.resource.data.action in ['cases:insert','cases:update','cases:status:running','cases:status:pending','cases:status:closed'];
+   }
+   match /assignments/{id} {
+    allow read: if member(org);
+    allow create, update: if manager(org) && request.resource.data.organization_id==org && id==request.resource.data.case_id+'_'+request.resource.data.user_id && exists(/databases/$(database)/documents/organization_members/$(org+'_'+request.resource.data.user_id)) && exists(/databases/$(database)/documents/organizations/$(org)/cases/$(request.resource.data.case_id));
+    allow delete: if manager(org);
+   }
+  }
+ }
 }

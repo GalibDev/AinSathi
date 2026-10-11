@@ -8,7 +8,7 @@ import {
 } from "react";
 import type { ReactNode } from "react";
 import { onIdTokenChanged } from "firebase/auth";
-import { SupabaseRepository } from "./supabase-repository";
+import { SparkRepository } from "./spark-repository";
 import type { Session } from "./firebase";
 import { Repository } from "./repository";
 import { auth, configured, sessionFor, authMessage } from "./firebase";
@@ -16,7 +16,7 @@ import type { Member, Organization } from "./schema";
 import { sampleMembers, sampleOrganization } from "./demo";
 
 interface Workspace {
-  repo: Repository | SupabaseRepository;
+  repo: Repository | SparkRepository;
   demo: boolean;
   session: Session | null;
   authLoading: boolean;
@@ -41,7 +41,7 @@ export function WorkspaceProvider({
   children: ReactNode;
 }) {
   const repo = useMemo(
-    () => (demo ? new Repository(true) : new SupabaseRepository(false)),
+    () => (demo ? new Repository(true) : new SparkRepository()),
     [demo],
   );
   const [session, setSession] = useState<Session | null>(null),

@@ -431,8 +431,7 @@ export function Calendar() {
 }
 
 export function DocumentList({ caseId }: { caseId?: string }) {
-  const { repo, organization, membership, demo, refresh, notice } =
-    useWorkspace();
+  const { repo, organization, membership, refresh, notice } = useWorkspace();
   const [query, setQuery] = useState(""),
     [caseSearch, setCaseSearch] = useState(""),
     [chosen, setChosen] = useState(caseId ?? ""),
@@ -489,9 +488,7 @@ export function DocumentList({ caseId }: { caseId?: string }) {
       <div className="section-title">
         <div>
           <h2>মামলার নথিপত্র</h2>
-          <p className="muted">
-            ব্যক্তিগত নথি • PDF, JPG ও PNG • সর্বোচ্চ ১০ MB
-          </p>
+          <p className="muted">Spark সংস্করণে নথি আপলোড আপাতত বন্ধ</p>
         </div>
         <FileText size={24} />
       </div>
@@ -508,11 +505,7 @@ export function DocumentList({ caseId }: { caseId?: string }) {
       ) : !documents.length ? (
         <Empty
           title="এখনো কোনো নথি নেই"
-          description={
-            demo
-              ? "ডেমোতে গোপন নথি আপলোড বন্ধ। আসল অ্যাকাউন্টে লগইন করে ব্যবহার করুন।"
-              : "নিচের ফর্ম দিয়ে মামলার নথি যুক্ত করুন।"
-          }
+          description="Spark সংস্করণে নথি আপলোড বন্ধ। মামলা, মক্কেল ও শুনানি সংরক্ষণ করা যাবে।"
         />
       ) : (
         <div>
@@ -596,7 +589,7 @@ export function DocumentList({ caseId }: { caseId?: string }) {
             <input
               type="file"
               required
-              disabled={demo || uploading}
+              disabled={true}
               accept="application/pdf,image/jpeg,image/png"
               onChange={(e) => setPendingFile(e.target.files?.[0] ?? null)}
             />
@@ -606,7 +599,7 @@ export function DocumentList({ caseId }: { caseId?: string }) {
               <progress aria-label="নথি আপলোড হচ্ছে" /> আপলোড হচ্ছে…
             </div>
           )}
-          <Button disabled={demo || uploading}>
+          <Button disabled={true}>
             <Upload size={17} />
             {uploading ? "আপলোড হচ্ছে…" : "নথি আপলোড করুন"}
           </Button>

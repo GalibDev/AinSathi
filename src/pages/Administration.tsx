@@ -407,7 +407,7 @@ export function Notifications() {
     <>
       <PageTitle
         title="বিজ্ঞপ্তি ও রিমাইন্ডার"
-        description="শুনানি ও চেম্বারের গুরুত্বপূর্ণ পরিবর্তনের খবর।"
+        description="অ্যাপের মধ্যে আসন্ন শুনানির রিমাইন্ডার। স্বয়ংক্রিয় SMS বা push চালু নেই।"
       />
       {error && <ErrorBox message={error} />}
       {data.loading ? (

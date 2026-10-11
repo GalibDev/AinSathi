@@ -1,7 +1,3 @@
-# Implementation status
+# Current implementation
 
-Active architecture: Firebase Authentication for Google/email login; Supabase PostgreSQL/RLS/private Storage for all case and chamber data. Context selects SupabaseRepository in live mode and the memory-only Repository in demo mode. No active Firebase Functions/Firestore calls remain.
-
-Firebase identities map to internal UUID profiles through a signature-verified Supabase Third-party Auth token and sync_firebase_profile RPC. Existing Supabase tables/UUIDs/data are preserved. The follow-up SQL migration must be run and the Firebase Third-party Auth integration enabled in Supabase Dashboard before live data access works. No remote migration or provider configuration was performed in this session. No paid Firebase functions are required.
-
-The Supabase upload Edge Function now authenticates Firebase via a user-scoped sync RPC, then checks membership/case before using private server Storage credentials. Its deployment remains pending. README.md contains exact setup steps and verification limits. The old Firebase data implementation is retained as inactive reference only.
+See README.md for the active Firebase Spark architecture, Console setup, limitations and verification commands. src/lib/spark-repository.ts is the live repository; src/lib/repository.ts remains the demo repository. Firebase Rules are in firebase/firestore.rules. No Supabase, Functions or Storage call is used by the active application. Hosted Rules and database setup must be completed separately; a local build does not deploy them.

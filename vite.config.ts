@@ -13,8 +13,6 @@ export default defineConfig(({ command, mode }) => {
       "VITE_FIREBASE_STORAGE_BUCKET",
       "VITE_FIREBASE_MESSAGING_SENDER_ID",
       "VITE_FIREBASE_APP_ID",
-      "VITE_SUPABASE_URL",
-      "VITE_SUPABASE_PUBLISHABLE_KEY",
     ];
     const missing = names.filter((name) => !env[name]?.trim());
     if (missing.length)

@@ -23,7 +23,7 @@ import {
   refreshVerification,
   logout,
 } from "../lib/firebase";
-import { createChamber, acceptInvitation } from "../lib/supabase";
+import { createChamber, acceptInvitation } from "../lib/spark-repository";
 import { useWorkspace } from "../lib/context";
 import { Brand } from "../components/Layout";
 import { Button, Field, ErrorBox, Loading } from "../components/ui";

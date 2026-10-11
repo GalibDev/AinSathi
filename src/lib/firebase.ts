@@ -1,3 +1,4 @@
+import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
 import { initializeApp } from "firebase/app";
 import {
   getAuth,
@@ -28,12 +29,14 @@ const config = {
 };
 export const configured = Object.values(config).every(Boolean);
 const app = configured ? initializeApp(config) : null;
+export const db = app ? getFirestore(app) : null;
 export const auth = app ? getAuth(app) : null;
 if (
   import.meta.env.DEV &&
   import.meta.env.VITE_FIREBASE_EMULATORS === "true" &&
   auth
 ) {
+  if (db) connectFirestoreEmulator(db, "127.0.0.1", 8080);
   connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });
 }
 export interface Session {
@@ -63,6 +66,9 @@ export function requireAuth() {
 export function authMessage(e: unknown): string {
   const code = typeof e === "object" && e && "code" in e ? String(e.code) : "";
   const messages: Record<string, string> = {
+    "permission-denied": "Firestore অনুমতি মেলেনি। সঠিক Rules প্রকাশ করা হয়েছে কি না এবং চেম্বারের সদস্যপদ যাচাই করুন।",
+    "unavailable": "Firestore সংযোগ পাওয়া যাচ্ছে না। ইন্টারনেট যাচাই করে আবার চেষ্টা করুন।",
+    "resource-exhausted": "Firestore ব্যবহারের সীমা শেষ হয়েছে। কিছুক্ষণ পর আবার চেষ্টা করুন।",
     "auth/popup-closed-by-user": "Google লগইন বাতিল হয়েছে। আবার চেষ্টা করুন।",
     "auth/cancelled-popup-request":
       "আগের Google লগইন উইন্ডো বন্ধ করে আবার চেষ্টা করুন।",
@@ -84,12 +90,6 @@ export function authMessage(e: unknown): string {
       "ইন্টারনেট সংযোগ যাচাই করে আবার চেষ্টা করুন।",
     "auth/expired-action-code": "লিংকের মেয়াদ শেষ। নতুন লিংক নিন।",
     "auth/invalid-action-code": "লিংকটি সঠিক নয় বা আগেই ব্যবহার হয়েছে।",
-    "functions/not-found":
-      "Firebase server এখনো deploy হয়নি। সেটআপ নির্দেশনা অনুসরণ করুন।",
-    "functions/unavailable":
-      "Firebase server-এ সংযোগ হয়নি। deployment ও ইন্টারনেট যাচাই করুন।",
-    "functions/internal":
-      "Server-এ কাজটি সম্পন্ন হয়নি। deployment ও configuration যাচাই করুন।",
   };
   return (
     messages[code] ?? (e instanceof Error ? e.message : "পুনরায় চেষ্টা করুন।")
@@ -147,14 +147,6 @@ export async function saveProfile(name: string, password: string) {
   if (!user) throw new Error("লগইন করুন।");
   if (password) await updatePassword(user, password);
   await updateProfile(user, { displayName: name });
-  const { requireSupabase, syncProfile, dataError } =
-    await import("./supabase");
-  const id = await syncProfile();
-  const { error } = await requireSupabase()
-    .from("profiles")
-    .update({ full_name: name, updated_at: new Date().toISOString() })
-    .eq("id", id);
-  dataError(error);
 }
 export async function logout() {
   await signOut(requireAuth());
