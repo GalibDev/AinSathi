@@ -14,11 +14,6 @@ import {
   reload,
   getIdToken,
 } from "firebase/auth";
-import {
-  getFunctions,
-  httpsCallable,
-  connectFunctionsEmulator,
-} from "firebase/functions";
 import { connectAuthEmulator } from "firebase/auth";
 import type { User } from "firebase/auth";
 
@@ -46,15 +41,12 @@ export const configured = Boolean(
 );
 const app = configured ? initializeApp(config) : null;
 export const auth = app ? getAuth(app) : null;
-const functions = app ? getFunctions(app, "asia-south1") : null;
 if (
   import.meta.env.DEV &&
   import.meta.env.VITE_FIREBASE_EMULATORS === "true" &&
-  auth &&
-  functions
+  auth
 ) {
   connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });
-  connectFunctionsEmulator(functions, "127.0.0.1", 5001);
 }
 export interface Session {
   user: {
@@ -115,22 +107,6 @@ export function authMessage(e: unknown): string {
     messages[code] ?? (e instanceof Error ? e.message : "পুনরায় চেষ্টা করুন।")
   );
 }
-export async function call<T>(
-  action: string,
-  args: Record<string, unknown> = {},
-): Promise<T> {
-  if (!functions) throw new Error("Firebase সংযোগ দেওয়া হয়নি।");
-  try {
-    return (
-      await httpsCallable<unknown, T>(
-        functions,
-        "workspace",
-      )({ action, ...args })
-    ).data;
-  } catch (e) {
-    throw new Error(authMessage(e), { cause: e });
-  }
-}
 export async function googleSignIn() {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
@@ -183,7 +159,14 @@ export async function saveProfile(name: string, password: string) {
   if (!user) throw new Error("লগইন করুন।");
   if (password) await updatePassword(user, password);
   await updateProfile(user, { displayName: name });
-  await call("saveProfile", { name });
+  const { requireSupabase, syncProfile, dataError } =
+    await import("./supabase");
+  const id = await syncProfile();
+  const { error } = await requireSupabase()
+    .from("profiles")
+    .update({ full_name: name, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  dataError(error);
 }
 export async function logout() {
   await signOut(requireAuth());

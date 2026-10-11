@@ -8,7 +8,7 @@ import {
 } from "react";
 import type { ReactNode } from "react";
 import { onIdTokenChanged } from "firebase/auth";
-import { FirebaseRepository } from "./firebase-repository";
+import { SupabaseRepository } from "./supabase-repository";
 import type { Session } from "./firebase";
 import { Repository } from "./repository";
 import { auth, configured, sessionFor, authMessage } from "./firebase";
@@ -16,7 +16,7 @@ import type { Member, Organization } from "./schema";
 import { sampleMembers, sampleOrganization } from "./demo";
 
 interface Workspace {
-  repo: Repository | FirebaseRepository;
+  repo: Repository | SupabaseRepository;
   demo: boolean;
   session: Session | null;
   authLoading: boolean;
@@ -41,7 +41,7 @@ export function WorkspaceProvider({
   children: ReactNode;
 }) {
   const repo = useMemo(
-    () => (demo ? new Repository(true) : new FirebaseRepository()),
+    () => (demo ? new Repository(true) : new SupabaseRepository(false)),
     [demo],
   );
   const [session, setSession] = useState<Session | null>(null),
@@ -84,7 +84,9 @@ export function WorkspaceProvider({
     if (demo || !session?.user.email_verified) return;
     let live = true;
     setError("");
-    Promise.all([repo.memberships(), repo.organizations()])
+    repo
+      .memberships()
+      .then(async (m) => [m, await repo.organizations()] as const)
       .then(([m, o]) => {
         if (live) {
           setMemberships(m);

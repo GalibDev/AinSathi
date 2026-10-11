@@ -19,11 +19,11 @@ import {
   passwordReset,
   finishPasswordReset,
   authMessage,
-  call,
   verifyEmail,
   refreshVerification,
   logout,
 } from "../lib/firebase";
+import { createChamber, acceptInvitation } from "../lib/supabase";
 import { useWorkspace } from "../lib/context";
 import { Brand } from "../components/Layout";
 import { Button, Field, ErrorBox, Loading } from "../components/ui";
@@ -368,10 +368,8 @@ export function Onboarding() {
     try {
       if (memberName.trim().length < 2 || (!invite && name.trim().length < 2))
         throw new Error("চেম্বার ও আপনার পূর্ণ নাম লিখুন");
-      await call(
-        invite ? "acceptInvitation" : "createChamber",
-        invite ? { token: invite, memberName } : { name, memberName },
-      );
+      if (invite) await acceptInvitation(invite, memberName);
+      else await createChamber(name, memberName);
       refresh();
       location.assign("/dashboard");
     } catch (e) {

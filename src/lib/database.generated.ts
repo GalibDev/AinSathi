@@ -506,6 +506,7 @@ export type Database = {
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
     Functions: {
+      sync_firebase_profile: { Args: Record<string, never>; Returns: string };
       create_chamber: {
         Args: { chamber_name: string; member_name: string };
         Returns: string;

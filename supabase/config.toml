@@ -15,3 +15,10 @@ additional_redirect_urls = ["http://127.0.0.1:5173/reset-password", "http://127.
 [auth.email]
 enable_signup = true
 enable_confirmations = true
+
+[auth.third_party.firebase]
+enabled = true
+project_id = "ainsathi"
+
+[functions.upload-document]
+verify_jwt = false
