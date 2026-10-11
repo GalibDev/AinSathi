@@ -12,7 +12,9 @@
     "preview": "vite preview --host 127.0.0.1",
     "db:types": "supabase gen types typescript --local > src/lib/database.generated.ts",
     "test:e2e": "playwright test",
-    "db:types:embedded": "node scripts/generate-types.ts"
+    "db:types:embedded": "node scripts/generate-types.ts",
+    "security:scan": "node scripts/check-credentials.mjs",
+    "prebuild": "npm run security:scan"
   },
   "dependencies": {
     "@fontsource/noto-sans-bengali": "^5.3.0",

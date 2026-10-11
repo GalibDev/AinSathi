@@ -24,7 +24,7 @@ npm ci
 npm run dev
 ~~~
 
-The owner's Firebase public web config and Supabase public URL/key are included as working deployment defaults. They are browser identifiers, not server secrets. For another project, set every VITE_FIREBASE_* and VITE_SUPABASE_* value from .env.example in .env.local and Vercel settings. Never use NEXT_PUBLIC_* in this Vite app. Never put a service-role key or private key in frontend environment variables or Git. .env.local is ignored.
+All Firebase and Supabase web configuration must be supplied through .env.local and Vercel environment variables, using the names in .env.example. No real API keys or publishable keys are hardcoded in tracked source. Never use NEXT_PUBLIC_* in this Vite app. Never put a service-role key or private key in frontend environment variables or Git. .env.local is ignored.
 
 Firebase Authentication → Settings → Authorized domains must include localhost, 127.0.0.1 and ain-sathi.vercel.app (hostname only). Google and optional Email/Password providers should be enabled. Verification/password recovery use Firebase's hosted email action handler. Analytics is not initialized.
 
@@ -69,3 +69,11 @@ npm run test:e2e
 Tests apply the real initial SQL and Firebase identity migration to embedded PostgreSQL with stubbed auth/storage schemas. They exercise Postgres anon Firebase identities, non-UUID UID mapping, anonymous denial, unverified/wrong-project denial, tenant isolation, viewer restrictions, note/audit attribution, invitations, private storage and legacy Supabase records, in addition to the initial serial/status/RLS tests. They do not validate hosted token signature verification, live Google consent, deployed Edge uploads, email delivery or production concurrency. Browser tests cover UI/demo flows and mocked auth errors. Hosted verification is still required after dashboard setup.
 
 Keep PostgreSQL AND private Storage backups, preserve paths and file hashes, and test restoration in a separate project. Database dumps do not contain uploaded files. Configure monitoring, rate limits, retention and accessibility/security review before confidential production use.
+
+## Credential alert remediation
+
+The previously committed Google API key remains in older Git commits until an explicitly authorized history rewrite. Removing current source does not revoke a key or clear history. Review the affected Google Cloud API key's API/application restrictions and usage. Rotate/replace it if it was unrestricted or used for non-Firebase Google APIs; update .env.local and Vercel, redeploy, then revoke the old key. Never paste replacement keys into committed source. Do not dismiss a GitHub alert as revoked until actual revocation is confirmed.
+
+Firebase web config is still visible to browsers after deployment, even when supplied through environment variables. Environment variables prevent repository hardcoding; they do not make frontend keys secret. Access control relies on verified identity, RLS and key restrictions. See https://firebase.google.com/docs/projects/api-keys.
+
+Production builds fail with the missing environment variable names instead of shipping disabled login buttons. Run npm run security:scan to check tracked/nonignored text files for credential patterns; this is a targeted guard, not a complete security audit.
