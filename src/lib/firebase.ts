@@ -22,13 +22,24 @@ import {
 import { connectAuthEmulator } from "firebase/auth";
 import type { User } from "firebase/auth";
 
+// Public Firebase web identifiers, supplied by the project owner. These are
+// included in every browser build; authorization remains on the server.
+// Keep a deployable default so Vercel builds work without local .env files.
 const config = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey:
+    import.meta.env.VITE_FIREBASE_API_KEY ||
+    "AIzaSyBPEeQg_GKGRON90VcibLqqr_afdH4g2JM",
+  authDomain:
+    import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "ainsathi.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "ainsathi",
+  storageBucket:
+    import.meta.env.VITE_FIREBASE_STORAGE_BUCKET ||
+    "ainsathi.firebasestorage.app",
+  messagingSenderId:
+    import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "55594142318",
+  appId:
+    import.meta.env.VITE_FIREBASE_APP_ID ||
+    "1:55594142318:web:10b1bd3e501461db49f47f",
 };
 export const configured = Boolean(
   config.apiKey && config.projectId && config.appId,

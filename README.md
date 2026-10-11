@@ -85,6 +85,6 @@ For full local emulator testing install a current Java runtime supported by Fire
 
 ## Vercel and backups
 
-Import GalibDev/AinSathi. Build command npm run build; output dist. Set the six VITE_FIREBASE_* environment variables (not NEXT_PUBLIC_*), add the deployed hostname to Firebase Authorized domains, and redeploy. vercel.json provides SPA rewrites and baseline headers. No Vercel deployment has been performed in this session.
+Import GalibDev/AinSathi. Build command npm run build; output dist. The owner-supplied public Firebase web config for ainsathi is included as a deployment default. Vercel can build without .env.local. To use another Firebase project, set all six VITE_FIREBASE_* environment variables (not NEXT_PUBLIC_*) and redeploy. Add the deployed hostname to Firebase Authorized domains. vercel.json provides SPA rewrites and baseline headers. No Vercel deployment has been performed in this session.
 
 Back up Firestore records AND private Storage objects; one is not a backup of the other. Preserve document keys, associations and file hashes. Test restoration into a separate restricted project before relying on the system. Review billing/retention and configure scheduled backups under the chamber owner's policy.
