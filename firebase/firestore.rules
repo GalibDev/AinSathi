@@ -30,14 +30,14 @@ service cloud.firestore {
    function base(id) { return request.resource.data.id==id && request.resource.data.organization_id==org; }
    function unchanged() { return request.resource.data.id==resource.data.id && request.resource.data.organization_id==resource.data.organization_id && request.resource.data.created_at==resource.data.created_at; }
    function eventLinked(id) { let d=request.resource.data; let e=getAfter(/databases/$(database)/documents/organizations/$(org)/events/$(d.last_event_id)).data; return e.case_id==id && e.actor_id==request.auth.uid && e.created_at==d.updated_at && e.closure_date==d.closed_date && (d.status!='closed' || e.outcome==d.closure_result); }
-   function validCase() { let d=request.resource.data; return d.title is string && d.title.size()>=2 && d.title.size()<=200 && d.status in ['running','pending','closed'] && ((d.status=='closed' && d.closed_date is string && d.closure_result is string && d.closure_result.size()>=2) || (d.status!='closed' && d.closed_date==null && d.closure_result=='')) && exists(/databases/$(database)/documents/organizations/$(org)/clients/$(d.client_id)); }
+   function validCase() { let d=request.resource.data; return d.title is string && d.title.size()>=1 && d.title.size()<=200 && d.status in ['running','pending','closed'] && ((d.status=='closed' && d.closed_date is string && d.closure_result is string && d.closure_result.size()>=2) || (d.status!='closed' && d.closed_date==null && d.closure_result=='')) && (d.client_id=='' || exists(/databases/$(database)/documents/organizations/$(org)/clients/$(d.client_id))); }
    match /cases/{id} {
     allow read: if member(org);
     allow create: if editor(org) && base(id) && validCase() && eventLinked(id) && request.resource.data.status=='running' && request.resource.data.archived_at==null && getAfter(/databases/$(database)/documents/organizations/$(org)/counters/cases).data.last_case_id==id && getAfter(/databases/$(database)/documents/organizations/$(org)/counters/cases).data.value==request.resource.data.serial_number;
     allow update: if editor(org) && unchanged() && validCase() && request.resource.data.serial_number==resource.data.serial_number && (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['next_hearing_date','updated_at','archived_at']) || (request.resource.data.last_event_id!=resource.data.last_event_id && eventLinked(id)));
    }
    match /clients/{id} {
-    function valid() { let d=request.resource.data; return d.full_name is string && d.full_name.size()>=2 && d.full_name.size()<=150 && d.phone is string && d.phone.matches('^(\\+?88)?01[3-9][0-9]{8}$') && d.notes is string && d.notes.size()<=5000; }
+    function valid() { let d=request.resource.data; return d.full_name is string && d.full_name.size()>=1 && d.full_name.size()<=150 && d.phone is string && (d.phone=='' || d.phone.matches('^(\\+?88)?01[3-9][0-9]{8}$')) && d.notes is string && d.notes.size()<=5000; }
     allow read: if member(org);
     allow create: if editor(org) && base(id) && valid();
     allow update: if editor(org) && unchanged() && valid();

@@ -5,7 +5,7 @@ test("mobile form dismisses keyboard focus and keeps navigation out of the way",
 }, info) => {
   test.skip(info.project.name !== "mobile", "Mobile focus behavior only");
   await page.goto("/demo/cases/new");
-  const title = page.getByLabel("মামলার শিরোনাম *");
+  const title = page.getByLabel("মামলার শিরোনাম");
   const nav = page.locator(".bottom-nav");
   await expect(nav).toBeVisible();
   await expect(title).not.toBeFocused();

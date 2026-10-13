@@ -60,3 +60,36 @@ describe("validation and permissions", () => {
     ).toBe("application/pdf");
   });
 });
+
+describe("partial records", () => {
+  it("accepts blank case fields and defaults its name and year", () => {
+    const c = caseFormSchema.parse({
+      title: "",
+      court_case_number: "",
+      case_year: NaN,
+      case_type: "",
+      court_name: "",
+      court_location: "",
+      received_date: "",
+      client_id: "",
+      plaintiff: "",
+      defendant: "",
+      contact_phone: "",
+      notes: "",
+    });
+    expect(c.title).toBe("নামহীন মামলা");
+    expect(c.case_year).toBe(new Date().getFullYear());
+    expect(c.client_id).toBe("");
+  });
+  it("accepts blank client fields but rejects malformed nonempty phones", () => {
+    expect(
+      clientFormSchema.parse({
+        full_name: "",
+        phone: "",
+        alternative_phone: "",
+        address: "",
+        notes: "",
+      }).full_name,
+    ).toBe("নামহীন মক্কেল");
+  });
+});

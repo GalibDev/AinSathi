@@ -39,26 +39,32 @@ export const date = z
     return !Number.isNaN(d.valueOf()) && d.toISOString().slice(0, 10) === v;
   }, "সঠিক তারিখ দিন");
 export const clientFormSchema = z.object({
-  full_name: z.string().trim().min(2, "অন্তত ২ অক্ষরে নাম দিন").max(150),
-  phone,
+  full_name: z
+    .string()
+    .trim()
+    .max(150)
+    .transform((v) => v || "নামহীন মক্কেল"),
+  phone: z.union([z.literal(""), phone]),
   alternative_phone: z.union([z.literal(""), phone]),
   address: z.string().max(500),
   notes: z.string().max(5000),
 });
 export type ClientInput = z.infer<typeof clientFormSchema>;
 export const caseFormSchema = z.object({
-  title: z.string().trim().min(2, "মামলার শিরোনাম দিন").max(200),
-  court_case_number: z
+  title: z
     .string()
     .trim()
-    .min(1, "আদালতের মামলা নম্বর দিন")
-    .max(100),
-  case_year: z.number().int().min(1900).max(2200),
-  case_type: z.string().min(1),
-  court_name: z.string().trim().min(2, "আদালতের নাম দিন").max(150),
+    .max(200)
+    .transform((v) => v || "নামহীন মামলা"),
+  court_case_number: z.string().trim().max(100),
+  case_year: z
+    .union([z.number().int().min(1900).max(2200), z.nan()])
+    .transform((v) => (Number.isNaN(v) ? new Date().getFullYear() : v)),
+  case_type: z.string(),
+  court_name: z.string().trim().max(150),
   court_location: z.string().max(200),
-  received_date: date,
-  client_id: z.string().uuid("মক্কেল নির্বাচন করুন"),
+  received_date: z.union([z.literal(""), date]),
+  client_id: z.union([z.literal(""), z.string().uuid("মক্কেল নির্বাচন করুন")]),
   plaintiff: z.string().max(200),
   defendant: z.string().max(200),
   contact_phone: z.union([z.literal(""), phone]),

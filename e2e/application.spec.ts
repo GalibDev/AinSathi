@@ -23,16 +23,16 @@ test("creates a client, creates case, closes and reopens it", async ({
 }) => {
   await page.goto("/demo/clients");
   await page.getByRole("button", { name: "নতুন মক্কেল", exact: true }).click();
-  await page.getByLabel("পূর্ণ নাম *").fill("টেস্ট মক্কেল");
-  await page.getByLabel("মোবাইল নম্বর *", { exact: true }).fill("01912345678");
+  await page.getByLabel("পূর্ণ নাম").fill("টেস্ট মক্কেল");
+  await page.getByLabel("মোবাইল নম্বর", { exact: true }).fill("01912345678");
   await page.getByRole("button", { name: "মক্কেল সংরক্ষণ করুন" }).click();
   await expect(page.getByRole("dialog")).not.toBeVisible();
   await page.goto("/demo/cases/new");
-  await page.getByLabel("মামলার শিরোনাম *").fill("টেস্ট মক্কেল বনাম বিবাদী");
-  await page.getByLabel("আদালতের মামলা নম্বর *").fill("999/2026");
-  await page.getByLabel("আদালত *", { exact: true }).fill("ঢাকা জেলা জজ কোর্ট");
+  await page.getByLabel("মামলার শিরোনাম").fill("টেস্ট মক্কেল বনাম বিবাদী");
+  await page.getByLabel("আদালতের মামলা নম্বর").fill("999/2026");
+  await page.getByLabel("আদালত", { exact: true }).fill("ঢাকা জেলা জজ কোর্ট");
   await page
-    .getByLabel("মক্কেল নির্বাচন *")
+    .getByLabel("মক্কেল নির্বাচন")
     .selectOption({ label: "মো. জসিম উদ্দিন — 01712345670" });
   await page.getByRole("button", { name: "মামলা সংরক্ষণ করুন" }).click();
   await expect(
@@ -72,4 +72,32 @@ test("calendar, report, staff and auth routes work", async ({ page }) => {
   await page.goto("/cases");
   await expect(page).toHaveURL(/\/login/);
   await expect(page.getByRole("heading", { name: "লগইন করুন" })).toBeVisible();
+});
+
+test("saves an empty case and shows details without a linked client", async ({
+  page,
+}) => {
+  await page.goto("/demo/cases/new");
+  await page.getByLabel("মামলার বছর").fill("");
+  await page.getByLabel("মামলা গ্রহণের তারিখ").fill("");
+  await page.getByRole("button", { name: "মামলা সংরক্ষণ করুন" }).click();
+  await expect(
+    page.getByRole("heading", { name: "মামলা সফলভাবে যোগ করা হয়েছে" }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: /মামলার বিস্তারিত দেখুন/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "নামহীন মামলা" }),
+  ).toBeVisible();
+  await expect(page.getByText("রেকর্ড পাওয়া যায়নি।")).not.toBeVisible();
+});
+test("saves clients with empty names and phones", async ({ page }) => {
+  await page.goto("/demo/clients");
+  for (let i = 0; i < 2; i++) {
+    await page
+      .getByRole("button", { name: "নতুন মক্কেল", exact: true })
+      .click();
+    await page.getByRole("button", { name: "মক্কেল সংরক্ষণ করুন" }).click();
+    await expect(page.getByRole("dialog")).not.toBeVisible();
+  }
+  await expect(page.getByText("নামহীন মক্কেল").first()).toBeVisible();
 });

@@ -141,7 +141,11 @@ export class Repository {
     if (this.demo) {
       if (
         this.clients.some(
-          (c) => c.id !== id && c.phone === input.phone && !c.archived_at,
+          (c) =>
+            !!input.phone &&
+            c.id !== id &&
+            c.phone === input.phone &&
+            !c.archived_at,
         )
       )
         throw new Error("এই নম্বরে মক্কেল ইতিমধ্যে আছেন");

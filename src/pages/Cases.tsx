@@ -384,7 +384,7 @@ export function CaseForm() {
     <>
       <PageTitle
         title={id ? "মামলা সম্পাদনা" : "নতুন মামলা"}
-        description="আদালতের মামলা নম্বর ও চেম্বারের সিরিয়াল আলাদা থাকবে।"
+        description="যেকোনো ঘর খালি রেখেও সংরক্ষণ করুন; পরে সম্পাদনা করতে পারবেন। শিরোনাম না দিলে নামহীন মামলা এবং বছর না দিলে চলতি বছর হবে।"
       />
       <form onSubmit={(e) => void form.handleSubmit(submit)(e)}>
         <Panel>
@@ -401,7 +401,7 @@ export function CaseForm() {
               />
             </Field>
             <Field
-              label="মামলার শিরোনাম *"
+              label="মামলার শিরোনাম"
               error={form.formState.errors.title?.message}
             >
               <input
@@ -410,7 +410,7 @@ export function CaseForm() {
               />
             </Field>
             <Field
-              label="আদালতের মামলা নম্বর *"
+              label="আদালতের মামলা নম্বর"
               error={form.formState.errors.court_case_number?.message}
             >
               <input
@@ -419,7 +419,7 @@ export function CaseForm() {
               />
             </Field>
             <Field
-              label="মামলার বছর *"
+              label="মামলার বছর"
               error={form.formState.errors.case_year?.message}
             >
               <input
@@ -427,7 +427,7 @@ export function CaseForm() {
                 {...form.register("case_year", { valueAsNumber: true })}
               />
             </Field>
-            <Field label="মামলার ধরন *">
+            <Field label="মামলার ধরন">
               <select {...form.register("case_type")}>
                 {Object.entries(typeLabels).map(([v, l]) => (
                   <option key={v} value={v}>
@@ -437,7 +437,7 @@ export function CaseForm() {
               </select>
             </Field>
             <Field
-              label="আদালত *"
+              label="আদালত"
               error={form.formState.errors.court_name?.message}
             >
               <input
@@ -449,7 +449,7 @@ export function CaseForm() {
               <input {...form.register("court_location")} />
             </Field>
             <Field
-              label="মামলা গ্রহণের তারিখ *"
+              label="মামলা গ্রহণের তারিখ"
               error={form.formState.errors.received_date?.message}
             >
               <input type="date" {...form.register("received_date")} />
@@ -468,12 +468,12 @@ export function CaseForm() {
                 />
               </Field>
               <Field
-                label="মক্কেল নির্বাচন *"
+                label="মক্কেল নির্বাচন"
                 error={form.formState.errors.client_id?.message}
               >
                 <select {...form.register("client_id")}>
                   <option value="">নির্বাচন করুন</option>
-                  {existing.data &&
+                  {existing.data?.client_id &&
                     !clients.data?.some(
                       (c) => c.id === existing.data!.client_id,
                     ) && (
@@ -559,7 +559,9 @@ export function CaseDetails() {
     async () => {
       const c = await repo.getCase(organization!.id, id);
       return {
-        client: await repo.getClient(organization!.id, c.client_id),
+        client: c.client_id
+          ? await repo.getClient(organization!.id, c.client_id)
+          : null,
         hearings: await repo.listHearings(
           organization!.id,
           "1900-01-01",
@@ -688,7 +690,7 @@ export function CaseDetails() {
           <Panel>
             <h2>পক্ষগুলোর তথ্য</h2>
             {[
-              ["মক্কেল", details.data?.client.full_name],
+              ["মক্কেল", details.data?.client?.full_name],
               ["বাদী", c.plaintiff],
               ["বিবাদী", c.defendant],
             ].map(([label, value]) => (
@@ -706,7 +708,7 @@ export function CaseDetails() {
                 </div>
               </div>
             ))}
-            {details.data?.client.phone && (
+            {details.data?.client?.phone && (
               <a
                 className="text-link"
                 href={"tel:" + details.data.client.phone}
@@ -715,7 +717,7 @@ export function CaseDetails() {
                 {details.data.client.phone}
               </a>
             )}
-            <p className="muted">{details.data?.client.address}</p>
+            <p className="muted">{details.data?.client?.address}</p>
             <p>{c.notes || "আলাদা নোট যোগ করা হয়নি"}</p>
           </Panel>
           <Panel>
@@ -1098,13 +1100,9 @@ export function ClientForm({
             <Field
               key={key}
               label={
-                [
-                  "পূর্ণ নাম *",
-                  "মোবাইল নম্বর *",
-                  "বিকল্প মোবাইল",
-                  "ঠিকানা",
-                  "নোট",
-                ][i]
+                ["পূর্ণ নাম", "মোবাইল নম্বর", "বিকল্প মোবাইল", "ঠিকানা", "নোট"][
+                  i
+                ]
               }
               error={form.formState.errors[key]?.message}
             >

@@ -348,4 +348,68 @@ test("lawyer can save hearings and notes but cannot assign staff", async () => {
     }),
   );
 });
-test('client create accepts valid phone and rejects invalid phone',async()=>{const d=db('owner'),c={id:'client2',organization_id:'a',full_name:'Second client',phone:'+8801712345678',notes:'',created_at:'t',updated_at:'t',archived_at:null};await assertSucceeds(setDoc(doc(d,'organizations/a/clients/client2'),c));await assertFails(updateDoc(doc(d,'organizations/a/clients/client2'),{phone:'123'}));});
+test("client create accepts valid phone and rejects invalid phone", async () => {
+  const d = db("owner"),
+    c = {
+      id: "client2",
+      organization_id: "a",
+      full_name: "Second client",
+      phone: "+8801712345678",
+      notes: "",
+      created_at: "t",
+      updated_at: "t",
+      archived_at: null,
+    };
+  await assertSucceeds(setDoc(doc(d, "organizations/a/clients/client2"), c));
+  await assertFails(
+    updateDoc(doc(d, "organizations/a/clients/client2"), { phone: "123" }),
+  );
+});
+test("partial clients and unlinked partial cases can be saved", async () => {
+  const d = db("owner");
+  await assertSucceeds(
+    setDoc(doc(d, "organizations/a/clients/partial-client"), {
+      id: "partial-client",
+      organization_id: "a",
+      full_name: "নামহীন মক্কেল",
+      phone: "",
+      notes: "",
+      created_at: "t",
+      updated_at: "t",
+      archived_at: null,
+    }),
+  );
+  const b = writeBatch(d);
+  b.set(doc(d, "organizations/a/counters/cases"), {
+    value: 2,
+    last_case_id: "partial-case",
+  });
+  b.set(doc(d, "organizations/a/cases/partial-case"), {
+    id: "partial-case",
+    organization_id: "a",
+    title: "নামহীন মামলা",
+    client_id: "",
+    status: "running",
+    closed_date: null,
+    closure_result: "",
+    archived_at: null,
+    serial_number: 2,
+    created_at: "p",
+    updated_at: "p",
+    last_event_id: "partial-event",
+    court_case_number: "",
+    court_name: "",
+    received_date: "",
+  });
+  b.set(doc(d, "organizations/a/events/partial-event"), {
+    id: "partial-event",
+    organization_id: "a",
+    case_id: "partial-case",
+    actor_id: "owner",
+    action: "cases:insert",
+    closure_date: null,
+    outcome: null,
+    created_at: "p",
+  });
+  await assertSucceeds(b.commit());
+});

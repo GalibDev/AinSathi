@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 test("stalled dashboard stops loading and retry recovers", async ({ page }) => {
   await page.clock.install();
-  await page.route("**/src/lib/repository.ts", async (route) => {
+  await page.route("**/src/lib/repository.ts*", async (route) => {
     const response = await route.fetch();
     const body = (await response.text()).replace(
       'async report(org, from = "", to = "") {',
