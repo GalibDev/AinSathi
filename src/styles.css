@@ -2181,8 +2181,7 @@ dialog::backdrop {
     margin-bottom: 18px;
   }
   .form-actions {
-    position: sticky;
-    bottom: 75px;
+    position: static;
     padding: 12px;
     background: #f4f7faf2;
     border: 1px solid var(--border);
@@ -2464,4 +2463,28 @@ dialog::backdrop {
 }
 .google-auth-button svg {
   flex-shrink: 0;
+}
+
+/* Prevent iOS input zoom and keyboard-obscured navigation on small screens. */
+@media (max-width: 767px) {
+  .field input,
+  .field textarea,
+  .field select,
+  .auth-card input,
+  .search-box input,
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+  .mobile-editing .bottom-nav {
+    display: none;
+  }
+  .form-actions {
+    flex-wrap: wrap;
+  }
+  .form-actions .button {
+    min-width: 0;
+    white-space: normal;
+  }
 }

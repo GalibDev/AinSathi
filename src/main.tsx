@@ -7,6 +7,7 @@ import "@fontsource/noto-sans-bengali/bengali-700.css";
 import "@fontsource/noto-sans-bengali/latin-400.css";
 import "@fontsource/noto-sans-bengali/latin-600.css";
 import App from "./App";
+import { MobileKeyboard } from "./components/MobileKeyboard";
 import "./styles.css";
 class Boundary extends React.Component<
   { children: React.ReactNode },
@@ -31,6 +32,7 @@ class Boundary extends React.Component<
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <Boundary>
+      <MobileKeyboard />
       <App />
     </Boundary>
   </React.StrictMode>,
