@@ -31,7 +31,9 @@ test("mobile form dismisses keyboard focus and keeps navigation out of the way",
   await notes.press("Enter");
   await expect(notes).toBeFocused();
   await page.getByText("মামলার নোট", { exact: true }).tap();
-  // A label intentionally keeps native focus; tapping surrounding panel dismisses.
+  await expect(notes).not.toBeFocused();
+  // Blank panel space must dismiss too.
+  await notes.tap();
   await page.locator(".form-actions").tap({ position: { x: 2, y: 2 } });
   await expect(notes).not.toBeFocused();
   await expect(nav).toBeVisible();
@@ -51,4 +53,25 @@ test("mobile form dismisses keyboard focus and keeps navigation out of the way",
   expect(
     Math.abs(box!.y + box!.height - page.viewportSize()!.height),
   ).toBeLessThanOrEqual(1);
+});
+
+test("empty field toggles off on second tap and opens again on next tap", async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== "mobile", "Mobile focus behavior only");
+  await page.goto("/demo/cases/new");
+  const field = page.getByLabel("বিবাদীর নাম");
+  await field.tap();
+  await expect(field).toBeFocused();
+  await field.tap();
+  await expect(field).not.toBeFocused();
+  await expect(page.locator(".bottom-nav")).toBeVisible();
+  await field.tap();
+  await expect(field).toBeFocused();
+  await field.fill("বিবাদী");
+  await field.tap();
+  await expect(field).toBeFocused();
+  await page.getByText("বিবাদীর নাম", { exact: true }).tap();
+  await expect(field).not.toBeFocused();
+  await expect(field).toHaveValue("বিবাদী");
 });
