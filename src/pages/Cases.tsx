@@ -313,7 +313,7 @@ export function CaseForm() {
       case_year: new Date().getFullYear(),
       case_type: "civil",
       court_name: "",
-      court_location: "ঢাকা",
+      court_location: "রংপুর",
       received_date: today(),
       client_id: "",
       plaintiff: "",
