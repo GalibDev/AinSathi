@@ -24,15 +24,22 @@ export default function Dashboard() {
   const until = new Date(date + "T12:00:00Z");
   until.setUTCDate(until.getUTCDate() + 7);
   const data = useResource(
-    async () => ({
-      report: await repo.report(organization!.id),
-      hearings: await repo.listHearings(
-        organization!.id,
-        date,
-        until.toISOString().slice(0, 10),
-      ),
-      cases: await repo.listCases(organization!.id, emptyFilters),
-    }),
+    async () =>
+      "dashboard" in repo
+        ? repo.dashboard(
+            organization!.id,
+            date,
+            until.toISOString().slice(0, 10),
+          )
+        : {
+            report: await repo.report(organization!.id),
+            hearings: await repo.listHearings(
+              organization!.id,
+              date,
+              until.toISOString().slice(0, 10),
+            ),
+            cases: await repo.listCases(organization!.id, emptyFilters),
+          },
     "dashboard" + organization!.id + date,
   );
   const stats = data.data?.report.stats;

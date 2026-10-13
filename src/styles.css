@@ -2488,3 +2488,40 @@ dialog::backdrop {
     white-space: normal;
   }
 }
+.install-app {
+  position: fixed;
+  right: 18px;
+  bottom: 24px;
+  z-index: 26;
+  box-shadow: 0 3px 16px #08294030;
+}
+@media (max-width: 767px) {
+  .install-app {
+    bottom: calc(88px + env(safe-area-inset-bottom));
+    font-size: 12px;
+    padding: 10px 14px;
+  }
+  .mobile-editing .install-app {
+    display: none;
+  }
+}
+.update-banner {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(92vw, 560px);
+  padding: 14px;
+  z-index: 80;
+  background: #082940;
+  color: white;
+  border-radius: 12px;
+  box-shadow: 0 3px 18px #08294030;
+}
+.update-banner button {
+  margin: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #e9c774;
+  color: #082940;
+}

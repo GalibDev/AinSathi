@@ -1,3 +1,4 @@
+import { withLoadTimeout } from "./load-timeout";
 import {
   createContext,
   useContext,
@@ -84,9 +85,11 @@ export function WorkspaceProvider({
     if (demo || !session?.user.email_verified) return;
     let live = true;
     setError("");
-    repo
-      .memberships()
-      .then(async (m) => [m, await repo.organizations()] as const)
+    withLoadTimeout(
+      repo
+        .memberships()
+        .then(async (m) => [m, await repo.organizations()] as const),
+    )
       .then(([m, o]) => {
         if (live) {
           setMemberships(m);
@@ -163,7 +166,7 @@ export function useResource<T>(load: () => Promise<T>, key: string) {
   useEffect(() => {
     let active = true;
     setState({ data: null, loading: true, error: "" });
-    load()
+    withLoadTimeout(Promise.resolve().then(load))
       .then((data) => {
         if (active) setState({ data, loading: false, error: "" });
       })

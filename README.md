@@ -34,3 +34,9 @@ Rules integration tests require Java 21 and Firestore Emulator:
 ## Credentials
 
 Never commit `.env.local`, service-account JSON, admin keys or real configuration literals. `npm run security:scan` runs before production builds. Browser Firebase configuration is shipped in the frontend bundle; security depends on Rules and appropriate API restrictions. A Google API key appeared in an older Git commit; deleting it from current source does not revoke it or remove it from history. Rotation/restriction and any Git history cleanup remain separate tasks. No service-account key is required for this Spark app.
+
+## Mobile loading and installation
+
+Dashboard data loads use two parallel collection reads rather than repeated report/search queries. Firestore uses long polling for browser/network compatibility and server reads to avoid silently showing stale cached results. Resource and workspace loads time out after 20 seconds with a retry action; this does not cancel underlying SDK work or prove hosted connectivity is healthy.
+
+The install button triggers the native browser prompt when available and otherwise explains installation. On iPhone, open in Safari, Share → Add to Home Screen → Add. Installed mode hides the install button. The manifest uses standalone display and the dashboard start URL; an Apple touch icon is included. A waiting service-worker update offers an explicit update action to avoid losing unsaved form data. PWA installation does not provide offline case access; Firestore still needs an internet connection.

@@ -1,4 +1,7 @@
-import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
+import {
+  initializeFirestore,
+  connectFirestoreEmulator,
+} from "firebase/firestore";
 import { initializeApp } from "firebase/app";
 import {
   getAuth,
@@ -29,7 +32,9 @@ const config = {
 };
 export const configured = Object.values(config).every(Boolean);
 const app = configured ? initializeApp(config) : null;
-export const db = app ? getFirestore(app) : null;
+export const db = app
+  ? initializeFirestore(app, { experimentalForceLongPolling: true })
+  : null;
 export const auth = app ? getAuth(app) : null;
 if (
   import.meta.env.DEV &&
@@ -66,9 +71,12 @@ export function requireAuth() {
 export function authMessage(e: unknown): string {
   const code = typeof e === "object" && e && "code" in e ? String(e.code) : "";
   const messages: Record<string, string> = {
-    "permission-denied": "Firestore অনুমতি মেলেনি। সঠিক Rules প্রকাশ করা হয়েছে কি না এবং চেম্বারের সদস্যপদ যাচাই করুন।",
-    "unavailable": "Firestore সংযোগ পাওয়া যাচ্ছে না। ইন্টারনেট যাচাই করে আবার চেষ্টা করুন।",
-    "resource-exhausted": "Firestore ব্যবহারের সীমা শেষ হয়েছে। কিছুক্ষণ পর আবার চেষ্টা করুন।",
+    "permission-denied":
+      "Firestore অনুমতি মেলেনি। সঠিক Rules প্রকাশ করা হয়েছে কি না এবং চেম্বারের সদস্যপদ যাচাই করুন।",
+    unavailable:
+      "Firestore সংযোগ পাওয়া যাচ্ছে না। ইন্টারনেট যাচাই করে আবার চেষ্টা করুন।",
+    "resource-exhausted":
+      "Firestore ব্যবহারের সীমা শেষ হয়েছে। কিছুক্ষণ পর আবার চেষ্টা করুন।",
     "auth/popup-closed-by-user": "Google লগইন বাতিল হয়েছে। আবার চেষ্টা করুন।",
     "auth/cancelled-popup-request":
       "আগের Google লগইন উইন্ডো বন্ধ করে আবার চেষ্টা করুন।",

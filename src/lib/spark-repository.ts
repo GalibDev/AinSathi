@@ -1,8 +1,8 @@
 import {
   collection,
   doc,
-  getDoc,
-  getDocs,
+  getDocFromServer as getDoc,
+  getDocsFromServer as getDocs,
   query,
   where,
   limit,
@@ -117,6 +117,46 @@ export async function acceptInvitation(token: string, display_name: string) {
 }
 export class SparkRepository {
   readonly demo = false;
+  async dashboard(org: string, from: string, to: string) {
+    const [all, hearings] = await Promise.all([
+      rows<CaseRecord>(org, "cases"),
+      rows<HearingRecord>(org, "hearings"),
+    ]);
+    const active = all.filter((c) => !c.archived_at);
+    for (const c of active)
+      c.next_hearing_date =
+        hearings
+          .filter((h) => h.case_id === c.id && h.hearing_date >= from)
+          .map((h) => h.hearing_date)
+          .sort()[0] ?? null;
+    const report: Report = {
+      stats: {
+        total: active.length,
+        running: active.filter((c) => c.status === "running").length,
+        pending: active.filter((c) => c.status === "pending").length,
+        closed: active.filter((c) => c.status === "closed").length,
+      },
+      by_type: [],
+      by_court: [],
+      by_lawyer: [],
+      closed_in_range: active.filter(
+        (c) => c.closed_date && c.closed_date >= from && c.closed_date <= to,
+      ).length,
+    };
+    return {
+      report,
+      cases: active
+        .sort((a, b) => b.serial_number - a.serial_number)
+        .slice(0, 20),
+      hearings: hearings
+        .filter((h) => h.hearing_date >= from && h.hearing_date <= to)
+        .sort((a, b) =>
+          (a.hearing_date + (a.hearing_time ?? "")).localeCompare(
+            b.hearing_date + (b.hearing_time ?? ""),
+          ),
+        ),
+    };
+  }
   async memberships(): Promise<Member[]> {
     const s = await getDocs(
       query(
